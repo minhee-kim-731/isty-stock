@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "isty-stock",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-01",
+
+  // 화면(정적 파일). /api/* 가 아닌 요청은 전부 여기서 처리된다.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+
+  // D1 데이터베이스 (WEUR — 실장님 쪽 응답을 우선).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "isty",
+      "database_id": "2abbfe65-244b-4594-a720-07b1b7a24890"
+    }
+  ],
+
+  // 접속 주소는 workers.dev 하나만. 버전별 프리뷰 URL 은 만들지 않는다.
+  "workers_dev": true,
+  "preview_urls": false,
+
+  "observability": { "enabled": true }
+}

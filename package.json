@@ -1,0 +1,17 @@
+{
+  "name": "isty-stock",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ISTY 재고·출고 데스크 — Cloudflare Workers + D1",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 execute isty --local --file=schema.sql",
+    "db:remote": "wrangler d1 execute isty --remote --file=schema.sql",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

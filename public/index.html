@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eff1f4">
+<title>ISTY 재고 데스크</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="root"></div>
+<dialog id="moves"><div class="card-h"><h2 id="moves-title">재고 이력</h2>
+<div class="right"><button class="btn ghost" onclick="document.getElementById('moves').close()">닫기</button></div></div>
+<div class="pad" id="moves-body"></div></dialog>
+<dialog id="adjust">
+  <div class="card-h"><h2>재고 조정</h2></div>
+  <div class="pad" style="display:flex;flex-direction:column;gap:16px">
+    <div>
+      <div class="prod-brand" id="adjust-brand"></div>
+      <div class="prod-name" id="adjust-name" style="font-size:15px"></div>
+    </div>
+    <div class="adjust-row">
+      <button class="btn adjust-btn" data-act="adj-step" data-v="-1" aria-label="1 빼기">−</button>
+      <div class="adjust-mid">
+        <span class="adjust-delta zero" id="adjust-delta">0</span>
+        <span class="adjust-after">현재 <b id="adjust-current">0</b>개 → <b id="adjust-after">0</b>개</span>
+      </div>
+      <button class="btn adjust-btn" data-act="adj-step" data-v="1" aria-label="1 더하기">+</button>
+    </div>
+    <div class="adjust-memo" id="adjust-memo" hidden></div>
+    <label class="f"><span>왜 고치나요</span>
+      <input type="text" id="adjust-reason" placeholder="예: 실물 세어보니 1개 적음 / 파손 폐기" maxlength="200">
+    </label>
+    <div class="err" id="adjust-err" style="color:var(--crit);font-size:12.5px;min-height:16px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" onclick="document.getElementById('adjust').close()">취소</button>
+      <button class="btn primary" data-act="adj-save" id="adjust-save">저장</button>
+    </div>
+  </div>
+</dialog>
+<dialog id="memo">
+  <div class="card-h"><h2>제품 메모</h2></div>
+  <div class="pad" style="display:flex;flex-direction:column;gap:14px">
+    <div>
+      <div class="prod-brand" id="memo-brand"></div>
+      <div class="prod-name" id="memo-name" style="font-size:15px"></div>
+    </div>
+    <div class="memo-other" id="memo-other" hidden></div>
+    <label class="f"><span id="memo-label">메모</span>
+      <textarea id="memo-text" maxlength="300" style="min-height:90px"
+        placeholder="예: 박스 살짝 찌그러짐 / 유통기한 2027-03 / 다음 발주 때 수량 늘리기"></textarea>
+    </label>
+    <p style="font-size:12px;color:var(--muted);margin:0" id="memo-hint"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn danger" data-act="memo-clear" id="memo-clear">지우기</button>
+      <button class="btn ghost" onclick="document.getElementById('memo').close()">취소</button>
+      <button class="btn primary" data-act="memo-save">저장</button>
+    </div>
+  </div>
+</dialog>
+<dialog id="check">
+  <div class="card-h"><h2>재고 개수 점검</h2></div>
+  <div class="pad" style="display:flex;flex-direction:column;gap:14px">
+    <label class="f"><span>어느 발주분인가요</span>
+      <select id="check-batch"></select>
+    </label>
+    <label class="f"><span>누가 점검했나요</span>
+      <select id="check-who">
+        <option value="Lococo">Lococo</option>
+        <option value="ISTY">ISTY</option>
+      </select>
+    </label>
+    <label class="f"><span>메모</span>
+      <textarea id="check-memo" maxlength="500" style="min-height:90px"
+        placeholder="예: 전 품목 실사 완료. Sea Kelp 1개 파손 확인, 나머지 수량 일치"></textarea>
+    </label>
+    <div class="err" id="check-err" style="color:var(--crit);font-size:12.5px;min-height:16px"></div>
+    <p style="font-size:12px;color:var(--muted);margin:0">
+      이 기록은 민희님과 실장님 화면에 똑같이 남습니다.
+    </p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" onclick="document.getElementById('check').close()">취소</button>
+      <button class="btn primary" data-act="check-save">기록 남기기</button>
+    </div>
+  </div>
+</dialog>
+<script src="/app.js"></script>
+</body>
+</html>
