@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS activity (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   actor      TEXT NOT NULL,
   text       TEXT NOT NULL,
+  kind       TEXT NOT NULL DEFAULT '',  -- 알림 종류: stock_adjust | pack_done | order_cancel | stock_memo | stock_check
   created_at TEXT NOT NULL
 );
 
