@@ -23,7 +23,7 @@
 
   function load(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-  function blankOrder() { return { orderNo: "", customer: "", dest: "", note: "", courier: "", tracking: "", items: [] }; }
+  function blankOrder() { return { orderNo: "", customer: "", dest: "", note: "", courier: "", tracking: "", visitNo: "", items: [] }; }
   function blankInbound() { return { ref: "", date: today(), supplier: "실리콘투", note: "", items: [] }; }
   function today() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -230,6 +230,14 @@
       + (mine ? "메모 고치기" : "메모 달기") + "</button>";
   }
 
+  /** 제품별 입고 점검 칩. 가장 최근 입고분을 점검했으면 완료로, 새 발주가 들어오면 다시 미점검으로 보인다. */
+  function checkChip(p) {
+    var label = p.checked ? "점검 완료 · " + (p.lastCheckBy === "Lococo" ? "민희" : "실장님") : "입고 점검";
+    return '<button class="chip' + (p.checked ? " ok" : "") + '" aria-pressed="' + !!p.checked + '"'
+      + ' data-act="check-open" data-id="' + esc(p.id) + '" style="padding:4px 10px;font-size:11.5px">'
+      + esc(label) + "</button>";
+  }
+
   /** 상태별 개수 칩. 누르면 그 상태만 걸러 본다. */
   function chip(value, label, count, cls) {
     return '<button class="chip ' + (cls || "") + '" data-act="ofilter" data-v="' + esc(value) + '"'
@@ -283,6 +291,7 @@
     // 창고에 쌓인 재고를 다 팔면 들어오는 돈 (IVA 포함 표시가 기준).
     var retail = sum(S.products, function (p) { return p.stock * (p.sellPrice || 0); });
     var priced = S.products.filter(function (p) { return p.sellPrice > 0; }).length;
+    var packingTotal = sum(S.packing || [], function (b) { return b.stock; });
 
     var h = "";
 
@@ -302,6 +311,7 @@
       + stat("출고 대기", open.length, "건", open.length ? "hot" : "")
       + stat("오늘 포장 완료", shippedToday.length, "건", "")
       + stat("총 재고", totalUnits, "개", "")
+      + stat("포장재", packingTotal, "개", packingTotal <= 0 ? "bad" : "")
       + stat("재고 부족", low.length, "SKU", low.length ? "bad" : "")
       + stat("재고 원가", "€" + value.toFixed(0), "", "")
       + stat("재고 판매가", "€" + retail.toFixed(0),
@@ -364,6 +374,8 @@
       +   field("택배회사", '<input type="text" data-d="courier" value="' + esc(DRAFT.courier) + '" placeholder="예: Correos">')
       +   field("송장번호", '<input type="text" data-d="tracking" value="' + esc(DRAFT.tracking) + '" placeholder="지금 몰라도 됩니다 — 실장님이 넣을 수 있어요">')
       + "</div>"
+      + field("몇 번째 이용 고객인가요 (Lococo 이용 횟수)",
+          '<input type="number" min="1" data-d="visitNo" value="' + esc(DRAFT.visitNo) + '" placeholder="예: 3 — 출고 인쇄물에 표시됩니다">')
       + field("실장님께 남길 메모", '<textarea data-d="note" placeholder="예: 샘플 2종 동봉, 완충재 넉넉히">' + esc(DRAFT.note) + "</textarea>")
       + '<div><span class="eyebrow">담을 제품</span><div class="itemrows" style="margin-top:6px">' + draftItemRows() + "</div></div>"
       + '<div class="grid2" style="align-items:end">'
@@ -413,9 +425,11 @@
                   ? '<div class="bc" style="margin-top:3px">' + fmtTime(o.shippedAt) + "</div>" : "")
             + "</td>"
               + '<td class="bc">' + (o.tracking ? esc(o.courier) + " " + esc(o.tracking) : "—") + "</td>"
-              + '<td class="r">' + (o.status !== "cancelled"
-                  ? '<button class="btn ghost danger" data-act="order-cancel" data-id="' + o.id + '" data-no="' + esc(o.orderNo) + '" data-shipped="' + (o.status === "shipped") + '">취소</button>'
-                  : "") + "</td></tr>";
+              + '<td class="r" style="white-space:nowrap">'
+              +   '<button class="btn ghost" data-act="order-edit" data-id="' + o.id + '">수정</button> '
+              +   (o.status !== "cancelled"
+                    ? '<button class="btn ghost danger" data-act="order-cancel" data-id="' + o.id + '" data-no="' + esc(o.orderNo) + '" data-shipped="' + (o.status === "shipped") + '">취소</button>'
+                    : "") + "</td></tr>";
           }).join("")
         + "</tbody></table></div>";
     }
@@ -467,15 +481,24 @@
     }
 
     h += '<div class="scrollx"><table><thead><tr>'
-      + '<th>제품</th><th class="r">현재고</th><th class="r">출고대기</th><th class="r">가용</th>'
+      + '<th>제품</th><th class="r">최초재고</th><th class="r">소진</th>'
+      + '<th class="r">현재고</th><th class="r">출고대기</th><th class="r">가용</th>'
       + "<th>메모</th>"
       + (canManage ? '<th class="r">매입가</th><th class="r">판매가</th><th class="r">마진</th>' : "")
       + (canAdjust ? '<th class="r">조정</th>' : "")
       + "<th></th>"
       + "</tr></thead><tbody>"
       + list.map(function (p) {
+          var consumed = p.received - p.stock;
+          var consumedCell = String(consumed);
+          // 판매/씨딩 구분은 서버가 role !== "brand" 일 때 아예 빼고 내려보낸다 — 실장님껜 안 보임.
+          if (ROLE === "brand" && (p.soldConsumed || p.seedingConsumed)) {
+            consumedCell += '<div class="consumed-split">판매 ' + p.soldConsumed + ' · 씨딩 ' + p.seedingConsumed + "</div>";
+          }
           return "<tr>"
             + "<td>" + prodCell(p) + "</td>"
+            + '<td class="r num">' + p.received + "</td>"
+            + '<td class="r num">' + consumedCell + "</td>"
             + '<td class="r num">' + p.stock + "</td>"
             + '<td class="r num">' + p.allocated + "</td>"
             + '<td class="r qtybig' + (p.available < 0 ? " neg" : "") + '">' + p.available + "</td>"
@@ -494,6 +517,7 @@
                   + "</div></td>"
                 : "")
             + '<td class="r" style="white-space:nowrap">'
+            +   checkChip(p) + " "
             +   '<button class="linkish" data-act="moves" data-id="' + esc(p.id) + '">이력</button>'
             +   (canManage
                   ? ' <button class="linkish" data-act="archive" data-id="' + esc(p.id)
@@ -505,7 +529,48 @@
       + "</tbody></table></div></section>";
 
     h += checksSection();
+    h += packingSection(canManage);
     return h;
+  }
+
+  /** 포장재(상자) 재고. 브랜드·창고 화면 양쪽(재고/재고 조회 탭)에 똑같이 보인다. */
+  function packingSection(canManage) {
+    var list = S.packing || [];
+    var h = '<section class="card"><div class="card-h"><h2>포장재</h2>'
+      + '<span class="sub">포장 완료 시 자동으로 빠집니다</span></div>';
+
+    if (!list.length) {
+      h += '<div class="empty">등록된 포장재가 없습니다.</div>';
+    } else {
+      h += '<div class="scrollx"><table><thead><tr><th>규격</th><th class="r">재고</th><th class="r">조정</th></tr></thead><tbody>'
+        + list.map(function (b) {
+            return "<tr><td>" + esc(b.size) + " 상자</td>"
+              + '<td class="r qtybig' + (b.stock <= 0 ? " neg" : "") + '">' + b.stock + "</td>"
+              + '<td class="r"><div class="stepper">'
+              + '<button class="btn ghost" data-act="padj" data-id="' + b.id + '" data-v="-1" aria-label="포장재 빼기">−</button>'
+              + '<button class="btn ghost" data-act="padj" data-id="' + b.id + '" data-v="1" aria-label="포장재 더하기">+</button>'
+              + "</div></td></tr>";
+          }).join("")
+        + "</tbody></table></div>";
+    }
+
+    if (canManage) {
+      h += '<div class="pad" style="padding-top:0">'
+        + '<details><summary style="cursor:pointer;font-size:13px;color:var(--muted);padding:4px 0">새 상자 규격 추가</summary>'
+        + '<div class="grid2" style="margin-top:10px;align-items:end">'
+        +   field("규격", '<input type="text" id="np-box-size" placeholder="예: 30×25×20">')
+        +   '<div style="display:flex;gap:8px;align-items:end">'
+        +     '<label class="f" style="flex:1"><span>초기 수량</span><input type="number" min="0" value="0" id="np-box-stock"></label>'
+        +     '<button class="btn" data-act="new-packing">등록</button></div>'
+        + "</div></details></div>";
+    }
+    return h + "</section>";
+  }
+
+  function packingById(id) {
+    var list = S.packing || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
   }
 
   /** 개수 점검 기록. 브랜드·창고 양쪽에 똑같이 보인다. */
@@ -519,14 +584,18 @@
     }
 
     h += '<div class="scrollx"><table><thead><tr>'
-      + "<th>일시</th><th>발주</th><th>점검자</th><th>메모</th>"
+      + "<th>일시</th><th>제품</th><th>발주</th><th>검수자</th><th>메모</th>"
       + "</tr></thead><tbody>"
       + list.map(function (c) {
           return "<tr>"
             + '<td class="bc">' + fmtTime(c.ts) + "</td>"
+            + "<td>" + (c.productName
+                ? '<div class="prod-brand">' + esc(c.productBrand) + "</div>"
+                  + '<div class="prod-name" style="font-size:13px">' + esc(c.productName) + "</div>"
+                : '<span class="bc">전체</span>') + "</td>"
             + '<td class="num">' + esc(c.batch || "—") + "</td>"
             + '<td><span class="pill ' + (c.checker === "Lococo" ? "accent" : "neutral") + '">'
-            +   esc(c.checker) + "</span></td>"
+            +   esc(c.checker === "Lococo" ? "민희" : "실장님") + "</span></td>"
             + '<td style="font-size:12.5px;color:var(--ink2);line-height:1.5">' + esc(c.memo || "—") + "</td>"
             + "</tr>";
         }).join("")
@@ -534,20 +603,44 @@
     return h;
   }
 
-  /** 점검 창 열기 — 어느 발주분인지 보여주고, 점검자와 메모를 받는다. */
-  function openCheck() {
+  var CHECK_PRODUCT = null;  // 지금 점검 중인 productId (없으면 전체 점검)
+
+  /** 점검 창 열기 — 제품을 지정하면 그 제품이 포함된 발주만, 아니면 전체 발주를 보여준다. */
+  function openCheck(productId) {
+    CHECK_PRODUCT = productId || null;
+    var p = CHECK_PRODUCT ? prod(CHECK_PRODUCT) : null;
+
+    document.getElementById("check-title").textContent = p ? "입고 점검" : "재고 개수 점검";
+    var box = document.getElementById("check-product");
+    if (p) {
+      document.getElementById("check-brand").textContent = p.brand;
+      document.getElementById("check-name").textContent = p.name;
+      box.hidden = false;
+    } else {
+      box.hidden = true;
+    }
+
     var ibs = S.inbounds || [];
+    // 오래된 것부터 1차, 2차… 번호를 매긴다.
+    var numbered = ibs.slice().sort(function (a, b) { return a.id - b.id; })
+      .map(function (ib, i) { return { ib: ib, no: i + 1 }; });
+    // 제품을 지정했으면 그 제품이 실제로 들어있는 발주만 고를 수 있게 거른다.
+    if (p) {
+      numbered = numbered.filter(function (x) {
+        return x.ib.items.some(function (it) { return it.productId === p.id; });
+      });
+    }
+
     var sel = document.getElementById("check-batch");
-    if (!ibs.length) {
+    if (!numbered.length) {
       sel.innerHTML = '<option value="">발주 기록 없음</option>';
     } else {
-      // 오래된 것부터 1차, 2차… 번호를 매긴다. 최신 발주가 기본 선택.
-      var asc = ibs.slice().sort(function (a, b) { return a.id - b.id; });
-      sel.innerHTML = asc.map(function (ib, i) {
-        return '<option value="' + ib.id + '" data-label="' + esc((i + 1) + "차 발주 · " + ib.ref) + '">'
-          + esc((i + 1) + "차 발주 · " + ib.ref + " (" + ib.date + ")") + "</option>";
+      sel.innerHTML = numbered.map(function (x) {
+        var label = x.no + "차 발주 · " + x.ib.ref;
+        return '<option value="' + x.ib.id + '" data-label="' + esc(label) + '">'
+          + esc(label + " (" + x.ib.date + ")") + "</option>";
       }).join("");
-      sel.value = String(asc[asc.length - 1].id);
+      sel.value = String(numbered[numbered.length - 1].ib.id);
     }
     document.getElementById("check-who").value = ROLE === "brand" ? "Lococo" : "ISTY";
     document.getElementById("check-memo").value = "";
@@ -568,8 +661,10 @@
       batch: o ? o.getAttribute("data-label") || "" : "",
       checker: checker,
       memo: document.getElementById("check-memo").value.trim(),
+      productId: CHECK_PRODUCT || null,
     };
     document.getElementById("check").close();
+    CHECK_PRODUCT = null;
     act(api("POST", "/api/stock-checks", payload), "점검 기록을 남겼습니다.");
   }
 
@@ -644,11 +739,13 @@
   function viewFulfil() {
     var open = openOrders();
     var doneToday = S.orders.filter(function (o) { return o.status === "shipped" && isToday(o.shippedAt); });
+    var packingTotal = sum(S.packing || [], function (b) { return b.stock; });
 
     var h = '<section class="stats">'
       + stat("처리할 주문", open.length, "건", open.length ? "hot" : "")
       + stat("담을 제품", sum(open, orderUnits), "개", "")
       + stat("오늘 포장 완료", doneToday.length, "건", "")
+      + stat("포장재", packingTotal, "개", packingTotal <= 0 ? "bad" : "")
       + "</section>";
 
     if (!open.length) {
@@ -761,12 +858,15 @@
 
     var h = '<div class="detail-top">'
       + '<button class="btn ghost" data-act="close-order">‹ 목록으로</button>'
-      + '<span class="pill ' + st.cls + '">' + st.label + "</span></div>";
+      + '<span class="pill ' + st.cls + '">' + st.label + "</span>"
+      + '<button class="btn ghost" style="margin-left:auto" data-act="print-order" data-id="' + o.id + '">인쇄</button>'
+      + "</div>";
 
     h += '<section class="card"><div class="pad detail-head">'
       + '<div class="detail-name">' + esc(o.customer) + "</div>"
       + '<div class="detail-no num">' + esc(o.orderNo) + "</div>"
       + (o.dest ? '<div class="detail-addr">' + esc(o.dest) + "</div>" : "")
+      + (o.visitNo ? '<div class="bc" style="margin-top:4px">Lococo 이용 ' + o.visitNo + "번째</div>" : "")
       + "</div>"
       + (o.note
           ? '<div class="pad" style="padding-top:0"><div class="ocard-note" style="margin:0">'
@@ -817,23 +917,40 @@
       + "</div></section>";
 
     if (!closed && !waiting) {
+      var boxList = S.packing || [];
+      var hasBox = boxList.some(function (b) { return b.stock > 0; });
       h += '<section class="card"><div class="pad" style="display:flex;flex-direction:column;gap:10px">'
         + '<div class="ship-fields">'
         +   '<input type="text" id="cr-' + o.id + '" value="' + esc(o.courier) + '" placeholder="택배사 (선택)">'
         +   '<input type="text" id="tr-' + o.id + '" value="' + esc(o.tracking) + '" placeholder="송장번호 (선택)">'
         + "</div>"
+        + field("어느 상자에 담았나요", '<select id="box-' + o.id + '">'
+            + (boxList.length
+                ? boxList.map(function (b) {
+                    return '<option value="' + b.id + '"' + (b.stock <= 0 ? " disabled" : "") + ">"
+                      + esc(b.size) + " 상자 (재고 " + b.stock + "개)" + "</option>";
+                  }).join("")
+                : '<option value="">등록된 포장재 없음</option>')
+            + "</select>")
         + '<button class="btn primary big wide" data-act="ready" data-id="' + o.id + '"'
-        +   (all && !busy ? "" : " disabled") + ">"
-        +   (all ? "포장 완료" : "전부 담으면 포장 완료") + "</button>"
+        +   (all && hasBox && !busy ? "" : " disabled") + ">"
+        +   (!all ? "전부 담으면 포장 완료" : !hasBox ? "포장재가 없습니다" : "포장 완료") + "</button>"
         + '<p style="font-size:12px;color:var(--muted);margin:0;text-align:center">'
-        +   "누르면 재고에서 빠지고 민희님께 알림이 갑니다.</p>"
+        +   "누르면 재고·포장재에서 빠지고 민희님께 알림이 갑니다.</p>"
         + "</div></section>";
     } else if (o.status === "shipped") {
       h += '<section class="card"><div class="pad" style="display:flex;flex-direction:column;gap:12px">'
         + '<div style="font-size:13px;color:var(--muted)">'
         +   "포장 완료 " + fmtTime(o.shippedAt)
         +   (o.tracking ? " · " + esc(o.courier) + " " + esc(o.tracking) : "")
+        +   (o.boxSize ? " · " + esc(o.boxSize) + " 상자" : "")
         + "</div>"
+        + (o.pickedUpAt
+            ? '<div class="banner ok" style="margin:0">택배 픽업 완료 · ' + fmtTime(o.pickedUpAt) + "</div>"
+            : '<button class="btn primary wide" data-act="pickup" data-id="' + o.id + '"'
+              +   (busy ? " disabled" : "") + ">택배 픽업 완료</button>"
+              + '<p style="font-size:12px;color:var(--muted);margin:0;text-align:center">'
+              +   "택배 기사가 실제로 가져가면 눌러주세요. 민희님께 알림이 갑니다.</p>")
         + '<button class="btn danger wide" data-act="order-cancel" data-id="' + o.id
         +   '" data-no="' + esc(o.orderNo) + '" data-shipped="true"' + (busy ? " disabled" : "") + ">"
         +   "주문 취소</button>"
@@ -872,26 +989,34 @@
     if (a === "order-clear") { DRAFT = blankOrder(); save("isty.draft.order", DRAFT); render(); return; }
     if (a === "order-submit") { submitOrder(); return; }
     if (a === "order-cancel") { cancelOrder(el); return; }
+    if (a === "order-edit") { openOrderEdit(Number(el.getAttribute("data-id"))); return; }
+    if (a === "orderedit-save") { saveOrderEdit(); return; }
+    if (a === "oe-add-item") { addOrderEditItem(); return; }
+    if (a === "oe-del-item") { delOrderEditItem(+el.getAttribute("data-i")); return; }
 
     if (a === "in-add-item") { addInboundItem(); return; }
     if (a === "in-del-item") { IN.items.splice(+el.getAttribute("data-i"), 1); save("isty.draft.inbound", IN); render(); return; }
     if (a === "in-clear") { IN = blankInbound(); save("isty.draft.inbound", IN); render(); return; }
     if (a === "in-submit") { submitInbound(); return; }
     if (a === "new-product") { addProduct(); return; }
+    if (a === "new-packing") { addPackingType(); return; }
 
-    if (a === "adj") { openAdjust(el.getAttribute("data-id"), +el.getAttribute("data-v")); return; }
+    if (a === "adj") { openAdjust("product", el.getAttribute("data-id"), +el.getAttribute("data-v")); return; }
+    if (a === "padj") { openAdjust("packing", Number(el.getAttribute("data-id")), +el.getAttribute("data-v")); return; }
     if (a === "adj-step") { stepAdjust(+el.getAttribute("data-v")); return; }
     if (a === "adj-save") { saveAdjust(); return; }
     if (a === "memo") { openMemo(el.getAttribute("data-id")); return; }
     if (a === "memo-save") { saveMemo(false); return; }
     if (a === "memo-clear") { saveMemo(true); return; }
-    if (a === "check-open") { openCheck(); return; }
+    if (a === "check-open") { openCheck(el.getAttribute("data-id") || null); return; }
     if (a === "check-save") { saveCheck(); return; }
     if (a === "moves") { showMoves(el.getAttribute("data-id")); return; }
     if (a === "open-order") { UI.openOrder = Number(el.getAttribute("data-id")); window.scrollTo(0, 0); render(); return; }
     if (a === "close-order") { UI.openOrder = null; render(); return; }
     if (a === "confirm") { e.stopPropagation(); act(api("POST", "/api/orders/" + el.getAttribute("data-id") + "/start"), "주문을 수락했습니다."); return; }
     if (a === "ready") { ready(el.getAttribute("data-id")); return; }
+    if (a === "pickup") { pickup(el.getAttribute("data-id")); return; }
+    if (a === "print-order") { printOrder(Number(el.getAttribute("data-id"))); return; }
     if (a === "alerts-seen") { act(api("POST", "/api/notifications/seen")); return; }
     if (a === "copy-list") { copyList(); return; }
     if (a === "copy-tracking") { copyText(el.getAttribute("data-v"), "송장번호를 복사했습니다."); return; }
@@ -959,7 +1084,7 @@
     var payload = {
       orderNo: DRAFT.orderNo, customer: DRAFT.customer, dest: DRAFT.dest,
       note: DRAFT.note, courier: DRAFT.courier, tracking: DRAFT.tracking,
-      items: DRAFT.items,
+      visitNo: DRAFT.visitNo, items: DRAFT.items,
     };
     if (busy) return;
     busy = true; render();
@@ -981,6 +1106,91 @@
     if (!confirm(msg)) return;
     UI.openOrder = null;   // 취소했으면 상세에 남아 있을 이유가 없다
     act(api("POST", "/api/orders/" + el.getAttribute("data-id") + "/cancel"), "취소했습니다.");
+  }
+
+  var ORDER_EDIT = null;        // 지금 수정 중인 주문 id
+  var ORDER_EDIT_ITEMS = [];    // 그 주문의 담을 제품 초안 [{productId, qty}]
+  var ORDER_EDIT_SHIPPED = false;  // 이미 포장 완료된 주문인가 (안내 문구용)
+
+  /** 주문 정보 수정 창. 취소된 주문은 품목 칸을 아예 숨긴다 (서버도 똑같이 막는다). */
+  function openOrderEdit(id) {
+    var o = S.orders.filter(function (x) { return x.id === id; })[0];
+    if (!o) return;
+    ORDER_EDIT = id;
+    ORDER_EDIT_ITEMS = o.items.map(function (it) { return { productId: it.productId, qty: it.qty }; });
+    ORDER_EDIT_SHIPPED = o.status === "shipped";
+    document.getElementById("oe-orderno").textContent = o.orderNo;
+    document.getElementById("oe-customer").value = o.customer;
+    document.getElementById("oe-dest").value = o.dest;
+    document.getElementById("oe-courier").value = o.courier;
+    document.getElementById("oe-tracking").value = o.tracking;
+    document.getElementById("oe-visitno").value = o.visitNo || "";
+    document.getElementById("oe-note").value = o.note;
+    document.getElementById("oe-err").textContent = "";
+
+    var isCancelled = o.status === "cancelled";
+    document.getElementById("oe-items-section").hidden = isCancelled;
+    document.getElementById("oe-cancelled-hint").hidden = !isCancelled;
+    document.getElementById("oe-items-hint").textContent = ORDER_EDIT_SHIPPED
+      ? "이미 포장 완료된 주문이라, 여기서 바꾸면 실제 재고도 그 차이만큼 같이 맞춰집니다."
+      : "";
+    if (!isCancelled) paintOrderEditItems();
+    document.getElementById("orderedit").showModal();
+  }
+
+  function paintOrderEditItems() {
+    var box = document.getElementById("oe-itemrows");
+    box.innerHTML = !ORDER_EDIT_ITEMS.length
+      ? '<div class="empty" style="padding:18px">담을 제품이 없습니다.</div>'
+      : ORDER_EDIT_ITEMS.map(function (it, i) {
+          return '<div class="itemrow"><div class="body">'
+            + '<div class="prod-brand">' + esc(pbrand(it.productId)) + "</div>"
+            + '<div class="prod-name">' + esc(pname(it.productId)) + "</div></div>"
+            + '<span class="qtybig">' + it.qty + "</span>"
+            + '<button class="btn ghost" data-act="oe-del-item" data-i="' + i + '" aria-label="품목 삭제">✕</button></div>';
+        }).join("");
+    document.getElementById("oe-pid-wrap").innerHTML = productSelect("oe-add-pid");
+  }
+
+  function addOrderEditItem() {
+    var pid = document.getElementById("oe-add-pid").value;
+    var qty = Math.max(1, parseInt(document.getElementById("oe-add-qty").value, 10) || 1);
+    var found = false;
+    ORDER_EDIT_ITEMS.forEach(function (it) { if (it.productId === pid) { it.qty += qty; found = true; } });
+    if (!found) ORDER_EDIT_ITEMS.push({ productId: pid, qty: qty });
+    paintOrderEditItems();
+  }
+
+  function delOrderEditItem(i) {
+    ORDER_EDIT_ITEMS.splice(i, 1);
+    paintOrderEditItems();
+  }
+
+  function saveOrderEdit() {
+    if (!ORDER_EDIT) return;
+    var customer = document.getElementById("oe-customer").value.trim();
+    if (!customer) {
+      document.getElementById("oe-err").textContent = "고객명을 입력해주세요.";
+      return;
+    }
+    var itemsVisible = !document.getElementById("oe-items-section").hidden;
+    if (itemsVisible && !ORDER_EDIT_ITEMS.length) {
+      document.getElementById("oe-err").textContent = "담을 제품을 하나 이상 넣어주세요.";
+      return;
+    }
+    var payload = {
+      customer: customer,
+      dest: document.getElementById("oe-dest").value,
+      courier: document.getElementById("oe-courier").value,
+      tracking: document.getElementById("oe-tracking").value,
+      visitNo: document.getElementById("oe-visitno").value,
+      note: document.getElementById("oe-note").value,
+    };
+    if (itemsVisible) payload.items = ORDER_EDIT_ITEMS;
+    var id = ORDER_EDIT;
+    document.getElementById("orderedit").close();
+    ORDER_EDIT = null;
+    act(api("POST", "/api/orders/" + id + "/edit", payload), "주문 정보를 수정했습니다.");
   }
   function addInboundItem() {
     var pid = document.getElementById("add-in-pid").value;
@@ -1011,6 +1221,13 @@
       sellPrice: document.getElementById("np-sell").value,
     };
     act(api("POST", "/api/products", body), "제품을 등록했습니다.");
+  }
+  function addPackingType() {
+    var body = {
+      size: document.getElementById("np-box-size").value,
+      stock: document.getElementById("np-box-stock").value,
+    };
+    act(api("POST", "/api/packing", body), "포장재 규격을 등록했습니다.");
   }
   /**
    * 표 안에서 판매가를 고치면 바로 저장한다. 값이 그대로면 서버를 부르지 않는다 —
@@ -1073,18 +1290,22 @@
         clear ? "메모를 지웠습니다." : "메모를 저장했습니다.");
   }
 
-  var ADJ = null;   // 지금 조정 중인 { productId, delta }
+  var ADJ = null;   // 지금 조정 중인 { kind: 'product'|'packing', id, delta }
 
-  function openAdjust(id, delta) {
-    var p = prod(id);
-    if (!p) return;
-    ADJ = { productId: id, delta: delta };
-    document.getElementById("adjust-name").textContent = p.name;
-    document.getElementById("adjust-brand").textContent = p.brand;
-    document.getElementById("adjust-current").textContent = p.stock;
+  function adjustRecord(kind, id) { return kind === "packing" ? packingById(id) : prod(id); }
+
+  function openAdjust(kind, id, delta) {
+    var rec = adjustRecord(kind, id);
+    if (!rec) return;
+    ADJ = { kind: kind, id: id, delta: delta };
+    var isPacking = kind === "packing";
+    document.getElementById("adjust-brand").textContent = isPacking ? "포장재" : rec.brand;
+    document.getElementById("adjust-name").textContent = isPacking ? rec.size + " 상자" : rec.name;
+    document.getElementById("adjust-current").textContent = rec.stock;
     var memoLine = document.getElementById("adjust-memo");
-    memoLine.textContent = p.memo ? "메모: " + p.memo : "";
-    memoLine.hidden = !p.memo;
+    var memoText = isPacking ? "" : rec.memo;
+    memoLine.textContent = memoText ? "메모: " + memoText : "";
+    memoLine.hidden = !memoText;
     document.getElementById("adjust-reason").value = "";
     paintAdjust();
     document.getElementById("adjust").showModal();
@@ -1093,16 +1314,16 @@
 
   function stepAdjust(by) {
     if (!ADJ) return;
-    var p = prod(ADJ.productId);
+    var rec = adjustRecord(ADJ.kind, ADJ.id);
     var next = ADJ.delta + by;
-    if (p && p.stock + next < 0) return;     // 창고에 없는 수량은 뺄 수 없다
+    if (rec && rec.stock + next < 0) return;     // 없는 수량은 뺄 수 없다
     ADJ.delta = next;
     paintAdjust();
   }
 
   function paintAdjust() {
-    var p = prod(ADJ.productId);
-    var after = p.stock + ADJ.delta;
+    var rec = adjustRecord(ADJ.kind, ADJ.id);
+    var after = rec.stock + ADJ.delta;
     document.getElementById("adjust-delta").textContent = (ADJ.delta > 0 ? "+" : "") + ADJ.delta;
     document.getElementById("adjust-delta").className = "adjust-delta " + (ADJ.delta < 0 ? "neg" : ADJ.delta > 0 ? "pos" : "zero");
     document.getElementById("adjust-after").textContent = after;
@@ -1119,18 +1340,24 @@
     }
     document.getElementById("adjust-err").textContent = "";
     var payload = { delta: ADJ.delta, reason: reason };
-    var id = ADJ.productId;
+    var kind = ADJ.kind, id = ADJ.id;
     document.getElementById("adjust").close();
     ADJ = null;
-    act(api("POST", "/api/products/" + encodeURIComponent(id) + "/adjust", payload), "재고를 조정했습니다.");
+    var url = kind === "packing"
+      ? "/api/packing/" + id + "/adjust"
+      : "/api/products/" + encodeURIComponent(id) + "/adjust";
+    act(api("POST", url, payload), kind === "packing" ? "포장재 수량을 조정했습니다." : "재고를 조정했습니다.");
   }
   function ready(id) {
     var cr = document.getElementById("cr-" + id);
     var tr = document.getElementById("tr-" + id);
+    var box = document.getElementById("box-" + id);
     if (busy) return;
+    if (box && !box.value) { toast("포장 상자를 선택해주세요.", true); return; }
     busy = true; render();
     api("POST", "/api/orders/" + id + "/ship", {
       courier: cr ? cr.value : "", tracking: tr ? tr.value : "",
+      boxId: box && box.value ? Number(box.value) : null,
     })
       .then(function () {
         UI.openOrder = null;              // 마감했으면 목록으로 돌아간다
@@ -1139,6 +1366,40 @@
       .catch(function (err) { if (err.status === 401) return showLogin(); toast(err.message, true); })
       .then(function () { busy = false; render(); });
   }
+  function pickup(id) {
+    act(api("POST", "/api/orders/" + id + "/pickup"), "택배 픽업 완료로 표시했습니다.");
+  }
+  /**
+   * 주문 내역을 스페인 고객용 종이 한 장으로 인쇄한다. 화면엔 안 보이고 인쇄할 때만 나타난다
+   * (styles.css 의 #print-slip / @media print 참고).
+   */
+  function printOrder(id) {
+    var o = S.orders.filter(function (x) { return x.id === id; })[0];
+    if (!o) return;
+
+    var slip = document.getElementById("print-slip");
+    slip.innerHTML =
+      '<img class="slip-logo" src="/lococo-logo.png" alt="Lococo">'
+      + '<div class="slip-title">Nº de pedido</div>'
+      + '<div class="slip-value">' + esc(o.orderNo) + "</div>"
+      + '<div class="slip-title">Cliente</div>'
+      + '<div class="slip-value">' + esc(o.customer) + "</div>"
+      + '<div class="slip-title">Dirección de envío</div>'
+      + '<div class="slip-value">' + esc(o.dest || "—") + "</div>"
+      + (o.visitNo
+          ? '<div class="slip-visit">¡Gracias por tu confianza! Esta es tu compra número <b>'
+            + o.visitNo + "</b> con Lococo.</div>"
+          : "");
+
+    // 로고 이미지가 그려질 때까지 기다렸다가 인쇄 창을 연다 (안 그러면 로고가 빈 채로 뜬다).
+    var img = slip.querySelector("img");
+    var printed = false;
+    function go() { if (printed) return; printed = true; window.print(); }
+    if (img.complete) go();
+    else { img.addEventListener("load", go); img.addEventListener("error", go); }
+    setTimeout(go, 800);
+  }
+
   function showMoves(id) {
     api("GET", "/api/products/" + encodeURIComponent(id) + "/moves").then(function (data) {
       var reasons = { inbound: "입고", shipment: "출고", adjust: "조정", return: "반환" };

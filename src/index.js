@@ -1,6 +1,6 @@
 import {
-  now, getMeta, bumpVersionStmt, activityStmt, moveStockStmts,
-  readState, getProduct, getOrder, getOrderItems, getInbound, getInboundItems,
+  now, getMeta, bumpVersionStmt, activityStmt, moveStockStmts, movePackingStmts,
+  readState, getProduct, getOrder, getOrderItems, getInbound, getInboundItems, getPackingMaterial,
   createSession, roleForToken, destroySession, reconcileStock, getVersion, markAlertsSeen,
 } from "./db.js";
 import { seedIfEmpty } from "./seed.js";
@@ -99,9 +99,11 @@ const ROUTES = [
   ["GET", /^\/api\/state$/, async (c) => json({ ...(await readState(c.db, c.role)), role: c.role })],
 
   ["POST", /^\/api\/orders$/, createOrder, { roles: ["brand"] }],
+  ["POST", /^\/api\/orders\/(\d+)\/edit$/, editOrder, { roles: ["brand"] }],
   ["POST", /^\/api\/orders\/(\d+)\/start$/, startPicking],
   ["POST", /^\/api\/orders\/(\d+)\/pick$/, pickItem],
   ["POST", /^\/api\/orders\/(\d+)\/ship$/, shipOrder],
+  ["POST", /^\/api\/orders\/(\d+)\/pickup$/, pickupOrder],
   ["POST", /^\/api\/orders\/(\d+)\/cancel$/, cancelOrder],   // 권한은 핸들러 안에서 나눈다
 
   ["POST", /^\/api\/inbounds$/, createInbound, { roles: ["brand"] }],
@@ -115,6 +117,10 @@ const ROUTES = [
   ["POST", /^\/api\/products\/([^/]+)\/memo$/, setProductMemo],  // 메모는 양쪽 다
 
   ["POST", /^\/api\/stock-checks$/, createStockCheck],   // 점검은 양쪽 다
+
+  ["POST", /^\/api\/packing$/, createPackingType, { roles: ["brand"] }],
+  ["POST", /^\/api\/packing\/(\d+)\/adjust$/, adjustPacking],   // 조정은 양쪽 다 (재고 조정과 동일)
+
   ["POST", /^\/api\/notifications\/seen$/, seenAlerts, { roles: ["brand"] }],
   ["GET", /^\/api\/export$/, exportAll, { roles: ["brand"] }],
   ["POST", /^\/api\/reconcile$/, reconcile, { roles: ["brand"] }],
@@ -215,16 +221,17 @@ async function createOrder({ db, body, role }) {
   const ts = now();
   const units = items.reduce((a, i) => a + i.qty, 0);
   const orderRef = "(SELECT id FROM orders WHERE order_no = ? ORDER BY id DESC LIMIT 1)";
+  const visitNo = posInt(body.visitNo) || null;
 
   const stmts = [
     db
       .prepare(
-        `INSERT INTO orders (order_no, customer, dest, note, courier, tracking, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'new', ?)`
+        `INSERT INTO orders (order_no, customer, dest, note, courier, tracking, visit_no, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?)`
       )
       .bind(
         orderNo, str(body.customer, 120) || "이름 없음", str(body.dest, 300), str(body.note, 500),
-        str(body.courier, 60), str(body.tracking, 80), ts
+        str(body.courier, 60), str(body.tracking, 80), visitNo, ts
       ),
     ...items.map((it) =>
       db
@@ -240,18 +247,124 @@ async function createOrder({ db, body, role }) {
   return json({ id: created.id, orderNo }, 201);
 }
 
-async function startPicking({ db, m, role }) {
+/**
+ * 주문 정보를 고친다. 취소된 주문은 품목을 못 건드린다 (이미 끝난 건이라 의미가 없다).
+ *
+ * 품목을 바꿀 때:
+ *  - 아직 포장 완료 전(new/picking)이면 재고는 손대지 않는다 — "출고대기"는 order_items 에서
+ *    바로 계산되는 값이라, 여기서 그냥 order_items 만 바꾸면 자동으로 맞다.
+ *  - 이미 포장 완료(shipped)된 주문이면 그때 이미 실물 재고가 빠져나간 상태라, 옛 수량과
+ *    새 수량의 차이만큼 재고를 실제로 되돌리거나 더 빼야 원장(stock_moves)과 어긋나지 않는다.
+ */
+async function editOrder({ db, m, body, role }) {
+  const id = Number(m[1]);
+  const order = await getOrder(db, id);
+  if (!order) return fail(404, "주문을 찾을 수 없습니다.");
+
+  const customer = str(body.customer, 120) || order.customer;
+  const dest = str(body.dest, 300);
+  const note = str(body.note, 500);
+  const courier = str(body.courier, 60);
+  const tracking = str(body.tracking, 80);
+  const visitNo = posInt(body.visitNo) || null;
+
+  const changes = [];
+  if (customer !== order.customer) changes.push(`고객명 "${order.customer}" → "${customer}"`);
+  if (dest !== order.dest) changes.push("배송지 변경");
+  if (courier !== order.courier) changes.push(`택배사 "${order.courier || "—"}" → "${courier || "—"}"`);
+  if (tracking !== order.tracking) changes.push(`송장번호 "${order.tracking || "—"}" → "${tracking || "—"}"`);
+  if ((order.visit_no || null) !== visitNo) changes.push(`이용 횟수 ${order.visit_no || "—"} → ${visitNo || "—"}`);
+  if (note !== order.note) changes.push("메모 수정");
+
+  const stmts = [];
+
+  if (Array.isArray(body.items)) {
+    if (order.status === "cancelled") return fail(409, "취소된 주문은 품목을 수정할 수 없습니다.");
+
+    const newItems = await normalizeItems(db, body.items);
+    if (!newItems.length) return fail(400, "담을 제품을 하나 이상 넣어주세요.");
+
+    const oldItems = await getOrderItems(db, id);
+    const oldQty = new Map(oldItems.map((it) => [it.product_id, it.qty]));
+    const oldPicked = new Map(oldItems.map((it) => [it.product_id, it.picked]));
+    const newQty = new Map(newItems.map((it) => [it.productId, it.qty]));
+
+    const sameAsBefore =
+      oldQty.size === newQty.size && [...oldQty].every(([pid, qty]) => newQty.get(pid) === qty);
+
+    if (!sameAsBefore) {
+      // 이미 포장 완료된 주문이면, 바뀐 만큼 실제 재고도 같이 맞춘다.
+      if (order.status === "shipped") {
+        const allIds = new Set([...oldQty.keys(), ...newQty.keys()]);
+        const short = [];
+        for (const pid of allIds) {
+          const before = oldQty.get(pid) || 0;
+          const after = newQty.get(pid) || 0;
+          const delta = before - after;   // 늘었으면 음수(재고 더 뺌), 줄었으면 양수(재고 돌려줌)
+          if (delta === 0) continue;
+
+          const product = await getProduct(db, pid);
+          if (delta < 0 && product && product.stock + delta < 0) {
+            short.push(`${product.name} (창고 ${product.stock}개, ${-delta}개 더 필요)`);
+            continue;
+          }
+          stmts.push(
+            ...moveStockStmts(db, {
+              productId: pid, delta, reason: "adjust", ref: `주문 ${order.order_no} 품목 수정`, actor: role,
+              guard: { sql: "(SELECT stock FROM products WHERE id = ?) + ? >= 0", binds: [pid, delta] },
+            })
+          );
+        }
+        if (short.length) return fail(409, `창고 재고가 모자랍니다: ${short.join(", ")}`);
+      }
+
+      stmts.push(db.prepare("DELETE FROM order_items WHERE order_id = ?").bind(id));
+      for (const it of newItems) {
+        stmts.push(
+          db
+            .prepare("INSERT INTO order_items (order_id, product_id, qty, picked) VALUES (?, ?, ?, ?)")
+            .bind(id, it.productId, it.qty, oldPicked.get(it.productId) ? 1 : 0)
+        );
+      }
+      changes.push("품목 변경");
+    }
+  }
+
+  if (!changes.length) return json({ ok: true });   // 바뀐 게 없으면 조용히 넘어간다
+
+  stmts.push(
+    db
+      .prepare(
+        `UPDATE orders SET customer = ?, dest = ?, note = ?, courier = ?, tracking = ?, visit_no = ?
+          WHERE id = ?`
+      )
+      .bind(customer, dest, note, courier, tracking, visitNo, id),
+    activityStmt(db, role, `주문 ${order.order_no} 정보 수정 · ${changes.join(", ")}`),
+    bumpVersionStmt(db)
+  );
+
+  await db.batch(stmts);
+  return json({ ok: true });
+}
+
+async function startPicking({ db, m, role, env }) {
   const id = Number(m[1]);
   const order = await getOrder(db, id);
   if (!order) return fail(404, "주문을 찾을 수 없습니다.");
   if (order.status !== "new") return fail(409, "이미 작업이 시작된 주문입니다.");
 
   const guard = { sql: "EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'new')", binds: [id] };
-  await db.batch([
-    db.prepare("UPDATE orders SET status = 'picking', started_at = ? WHERE id = ? AND status = 'new'").bind(now(), id),
-    guardedActivityStmt(db, role, `주문 ${order.order_no} 포장 시작`, guard),
+  const label = `주문 ${order.order_no} (${order.customer}) 수락 · 포장 시작`;
+  // guardedActivityStmt 가 보는 조건(status='new')은 상태를 바꾸는 UPDATE보다 먼저 확인해야 한다.
+  const results = await db.batch([
+    guardedActivityStmt(db, role, label, guard),
     bumpVersionStmt(db),
+    db.prepare("UPDATE orders SET status = 'picking', started_at = ? WHERE id = ? AND status = 'new'").bind(now(), id),
   ]);
+  const changed = results[results.length - 1].meta.changes;
+  if (!changed) return fail(409, "다른 화면에서 이미 수락됐습니다.");
+
+  if (role === "warehouse") await notifySlack(env, `📥 ${label}`);
   return json({ ok: true });
 }
 
@@ -281,7 +394,7 @@ async function pickItem({ db, m, body }) {
   return json({ ok: true });
 }
 
-async function shipOrder({ db, m, body, role }) {
+async function shipOrder({ db, m, body, role, env }) {
   const id = Number(m[1]);
   const order = await getOrder(db, id);
   if (!order) return fail(404, "주문을 찾을 수 없습니다.");
@@ -303,6 +416,12 @@ async function shipOrder({ db, m, body, role }) {
   }
   if (short.length) return fail(409, `창고 재고가 모자랍니다: ${short.join(", ")}`);
 
+  const boxId = Math.floor(Number(body.boxId)) || null;
+  if (!boxId) return fail(400, "포장 상자를 선택해주세요.");
+  const box = await getPackingMaterial(db, boxId);
+  if (!box || box.archived) return fail(404, "포장 상자 종류를 찾을 수 없습니다.");
+  if (box.stock <= 0) return fail(409, `${box.size} 상자 재고가 없습니다.`);
+
   // 실장님이 비워서 보내면 민희님이 주문 등록할 때 넣어둔 값을 그대로 둔다.
   const courier = str(body.courier, 60) || order.courier;
   const tracking = str(body.tracking, 80) || order.tracking;
@@ -318,25 +437,73 @@ async function shipOrder({ db, m, body, role }) {
       })
     );
   }
+  const label = `주문 ${order.order_no} (${order.customer}) 포장 완료${tracking ? ` · 송장 ${tracking}` : ""} · ${box.size} 상자`;
   stmts.push(
-    guardedActivityStmt(
-      db, role,
-      `주문 ${order.order_no} (${order.customer}) 포장 완료${tracking ? ` · 송장 ${tracking}` : ""}`,
-      guard,
-      role === "warehouse" ? "pack_done" : ""
-    ),
+    ...movePackingStmts(db, {
+      packingId: boxId, delta: -1, reason: "ship", ref: order.order_no, actor: role, guard,
+    }),
+    guardedActivityStmt(db, role, label, guard, role === "warehouse" ? "pack_done" : ""),
     db
       .prepare(
-        `UPDATE orders SET status = 'shipped', shipped_at = ?, courier = ?, tracking = ?
+        `UPDATE orders SET status = 'shipped', shipped_at = ?, courier = ?, tracking = ?, box_id = ?
           WHERE id = ? AND status = 'picking'`
       )
-      .bind(now(), courier, tracking, id),
+      .bind(now(), courier, tracking, boxId, id),
     bumpVersionStmt(db)
   );
 
   const results = await db.batch(stmts);
   const changed = results[results.length - 2].meta.changes;
   if (!changed) return fail(409, "다른 화면에서 이미 발송 처리됐습니다.");
+
+  if (role === "warehouse") await notifySlack(env, `📦 ${label}`);
+  return json({ ok: true });
+}
+
+/** 알림 채널로 한 줄 보낸다. 실패해도 무시한다 — 인앱 알림이 이미 남아있으니 이 요청 자체는 성공으로 둔다. */
+async function notifySlack(env, text) {
+  if (!env.SLACK_WEBHOOK_URL) return;
+  try {
+    await fetch(env.SLACK_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+  } catch {
+    // 슬랙이 잠깐 안 되더라도 픽업 처리 자체는 이미 끝났다.
+  }
+}
+
+/** 택배 기사가 실제로 픽업해 갔다는 표시. 포장 완료와는 별개의 시각으로 남긴다. */
+async function pickupOrder({ db, m, role, env }) {
+  const id = Number(m[1]);
+  const order = await getOrder(db, id);
+  if (!order) return fail(404, "주문을 찾을 수 없습니다.");
+  if (order.status !== "shipped") return fail(409, "포장 완료된 주문만 픽업 완료 처리할 수 있습니다.");
+  if (order.picked_up_at) return fail(409, "이미 픽업 완료 처리됐습니다.");
+
+  const guard = {
+    sql: "EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'shipped' AND picked_up_at IS NULL)",
+    binds: [id],
+  };
+  const label = `주문 ${order.order_no} (${order.customer}) 택배 픽업 완료`;
+
+  // 조건부 문장들이 먼저 "아직 픽업 전" 상태를 확인해야 하므로, 상태를 바꾸는 UPDATE는 맨 뒤에 둔다
+  // (guardedActivityStmt 도 같은 조건을 보는데, 앞서 UPDATE 를 해버리면 그 조건이 이미 거짓이 된다).
+  const results = await db.batch([
+    guardedActivityStmt(db, role, label, guard, "pickup_done"),
+    bumpVersionStmt(db),
+    db
+      .prepare(
+        `UPDATE orders SET picked_up_at = ?
+          WHERE id = ? AND status = 'shipped' AND picked_up_at IS NULL`
+      )
+      .bind(now(), id),
+  ]);
+  const changed = results[results.length - 1].meta.changes;
+  if (!changed) return fail(409, "다른 화면에서 이미 처리됐습니다.");
+
+  if (role === "warehouse") await notifySlack(env, `📦 ${label}`);
   return json({ ok: true });
 }
 
@@ -365,11 +532,19 @@ async function cancelOrder({ db, m, role }) {
         })
       );
     }
+    // 썼던 상자도 되돌린다.
+    if (order.box_id) {
+      stmts.push(
+        ...movePackingStmts(db, {
+          packingId: order.box_id, delta: 1, reason: "return", ref: order.order_no, actor: role, guard,
+        })
+      );
+    }
   }
   stmts.push(
     guardedActivityStmt(
       db, role,
-      `주문 ${order.order_no} (${order.customer}) 취소${wasShipped ? " · 재고 반환" : ""}`,
+      `주문 ${order.order_no} (${order.customer}) 취소${wasShipped ? " · 재고·포장재 반환" : ""}`,
       guard,
       role === "warehouse" ? "order_cancel" : ""
     ),
@@ -583,9 +758,52 @@ async function setProductMemo({ db, m, body, role }) {
   return json({ ok: true });
 }
 
+/* ------------------------------------------------------------------ 포장재 */
+
+/** 새 상자 규격 등록. 지금은 25×20×15 하나뿐이지만 나중에 다른 규격이 늘어날 수 있다. */
+async function createPackingType({ db, body, role }) {
+  const size = str(body.size, 60);
+  if (!size) return fail(400, "상자 규격을 입력해주세요.");
+
+  const stock = Math.max(0, Math.floor(Number(body.stock) || 0));
+
+  await db.batch([
+    db.prepare("INSERT INTO packing_materials (size, stock, created_at) VALUES (?, ?, ?)").bind(size, stock, now()),
+    activityStmt(db, role, `포장재 종류 추가 · ${size} 상자 (${stock}개)`),
+    bumpVersionStmt(db),
+  ]);
+  return json({ ok: true }, 201);
+}
+
+/** 포장재 수량 조정. 재고 조정과 완전히 같은 패턴 — 사유가 있어야 저장된다. */
+async function adjustPacking({ db, m, body, role }) {
+  const id = Number(m[1]);
+  const box = await getPackingMaterial(db, id);
+  if (!box) return fail(404, "포장 상자를 찾을 수 없습니다.");
+
+  const delta = Math.floor(Number(body.delta) || 0);
+  if (!delta) return fail(400, "조정할 수량을 입력해주세요.");
+  if (box.stock + delta < 0) return fail(409, "현재 수량보다 많이 뺄 수 없습니다.");
+
+  const reason = str(body.reason, 200);
+  if (!reason) return fail(400, "조정 사유를 적어주세요.");
+
+  const label = `포장재 조정 · ${box.size} 상자 ${delta > 0 ? "+" : ""}${delta} → ${box.stock + delta} · ${reason}`;
+
+  await db.batch([
+    ...movePackingStmts(db, {
+      packingId: box.id, delta, reason: "adjust", ref: reason, actor: role,
+      guard: { sql: "(SELECT stock FROM packing_materials WHERE id = ?) + ? >= 0", binds: [box.id, delta] },
+    }),
+    activityStmt(db, role, label, role === "warehouse" ? "stock_adjust" : ""),
+    bumpVersionStmt(db),
+  ]);
+  return json({ ok: true });
+}
+
 /* ------------------------------------------------------------------ 복구 */
 
-/** 재고 개수 점검 기록. 누가 어느 발주분을 점검했는지 양쪽에 똑같이 남는다. */
+/** 재고 개수 점검 기록. 제품을 지정하면 그 제품의 입고 점검, 지정 안 하면 전체(발주 단위) 점검. */
 async function createStockCheck({ db, body, role }) {
   const checker = str(body.checker, 20);
   if (checker !== "Lococo" && checker !== "ISTY") {
@@ -600,18 +818,26 @@ async function createStockCheck({ db, body, role }) {
     if (!batch) batch = ib.ref;
   }
 
+  const productId = body.productId ? str(body.productId, 120) : null;
+  let product = null;
+  if (productId) {
+    product = await getProduct(db, productId);
+    if (!product) return fail(404, "제품을 찾을 수 없습니다.");
+  }
+
+  const checkerLabel = checker === "Lococo" ? "민희" : "실장님";
+  const label = product
+    ? `입고 점검 · ${product.name} · ${batch || "발주 미지정"} · ${checkerLabel}`
+    : `재고 개수 점검 · ${batch || "발주 미지정"} · ${checkerLabel}`;
+
   await db.batch([
     db
       .prepare(
-        `INSERT INTO stock_checks (inbound_id, batch, checker, memo, actor, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO stock_checks (inbound_id, product_id, batch, checker, memo, actor, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .bind(inboundId, batch, checker, str(body.memo, 500), role, now()),
-    activityStmt(
-      db, role,
-      `재고 개수 점검 · ${batch || "발주 미지정"} · ${checker}`,
-      role === "warehouse" ? "stock_check" : ""
-    ),
+      .bind(inboundId, productId, batch, checker, str(body.memo, 500), role, now()),
+    activityStmt(db, role, label, role === "warehouse" ? "stock_check" : ""),
     bumpVersionStmt(db),
   ]);
   return json({ ok: true }, 201);
@@ -625,7 +851,10 @@ async function seenAlerts({ db }) {
 
 /** 전체를 JSON 한 덩어리로 내려준다. 언제든 받아두면 그 시점으로 되돌릴 근거가 된다. */
 async function exportAll({ db }) {
-  const tables = ["products", "inbounds", "inbound_items", "orders", "order_items", "stock_moves", "activity"];
+  const tables = [
+    "products", "inbounds", "inbound_items", "orders", "order_items", "stock_moves", "activity",
+    "stock_checks", "packing_materials", "packing_moves",
+  ];
   const dump = { exportedAt: now(), version: await getVersion(db) };
   for (const t of tables) {
     const { results } = await db.prepare(`SELECT * FROM ${t}`).all();

@@ -43,6 +43,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.consumed-split{font-size:11px;color:var(--muted);font-weight:400;white-space:nowrap}
 .eyebrow{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
 
 /* ---------- shell ---------- */
@@ -171,6 +172,7 @@ tbody tr:hover{background:var(--surface2)}
 .banner{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:8px;font-size:13px;border:1px solid}
 .banner.warn{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
 .banner.crit{background:var(--crit-soft);border-color:var(--crit-line);color:var(--crit)}
+.banner.ok{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 10px 30px -8px rgba(0,0,0,.5);max-width:min(90vw,520px);text-align:center}
 .toast.bad{background:var(--crit);color:#fff}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:0;max-width:520px;width:calc(100vw - 32px);box-shadow:var(--shadow)}
@@ -333,3 +335,25 @@ dialog .pad{max-height:70vh;overflow:auto}
 .margin.ok   { color: #2f7d5d; }
 .margin.warn { color: #a8720c; }
 .margin.bad  { color: #c23b3b; }
+
+/* ---------- 출고 인쇄물 (스페인 고객에게 보내는 종이) ----------
+   평소엔 화면에서 완전히 감춰두고, 인쇄할 때만 이것만 남기고 나머지는 다 지운다. */
+#print-slip { display: none; }
+.slip-logo { height: 34px; }
+.slip-title { font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: #666; margin: 18px 0 4px; }
+.slip-value { font-size: 17px; font-weight: 600; }
+.slip-visit { margin-top: 28px; padding: 14px 16px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+
+@media print {
+  body * { visibility: hidden; }
+  #print-slip, #print-slip * { visibility: visible; }
+  #print-slip {
+    display: block;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    padding: 40px;
+    color: #111;
+    font-family: "IBM Plex Sans KR", Arial, sans-serif;
+  }
+}

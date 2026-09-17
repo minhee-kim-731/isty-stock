@@ -64,6 +64,29 @@ export function moveStockStmts(db, { productId, delta, reason, ref = "", actor =
   ];
 }
 
+/**
+ * 포장재(상자) 이동 한 건. moveStockStmts 와 완전히 같은 패턴 — 원장 INSERT 와 재고 UPDATE 에
+ * 똑같은 조건을 걸어서 둘이 항상 같이 일어나게 한다.
+ */
+export function movePackingStmts(db, { packingId, delta, reason, ref = "", actor = "", guard }) {
+  const ts = now();
+  const where = guard ? ` AND ${guard.sql}` : "";
+  const extra = guard ? guard.binds : [];
+
+  return [
+    db
+      .prepare(
+        `INSERT INTO packing_moves (packing_id, delta, reason, ref, actor, created_at)
+         SELECT ?, ?, ?, ?, ?, ?
+          WHERE EXISTS (SELECT 1 FROM packing_materials WHERE id = ?)${where}`
+      )
+      .bind(packingId, delta, reason, ref, actor, ts, packingId, ...extra),
+    db
+      .prepare(`UPDATE packing_materials SET stock = stock + ? WHERE id = ?${where}`)
+      .bind(delta, packingId, ...extra),
+  ];
+}
+
 /* ------------------------------------------------------------------ 조회 */
 
 const SQL_PRODUCTS = `
@@ -73,16 +96,39 @@ const SQL_PRODUCTS = `
            SELECT SUM(oi.qty) FROM order_items oi
              JOIN orders o ON o.id = oi.order_id
             WHERE oi.product_id = p.id AND o.status IN ('new','picking') AND o.hidden = 0
-         ), 0) AS allocated
+         ), 0) AS allocated,
+         -- 최초 재고: 되돌리지 않은 입고로 지금까지 실제 들어온 총량.
+         COALESCE((
+           SELECT SUM(ii.qty) FROM inbound_items ii
+             JOIN inbounds ib ON ib.id = ii.inbound_id
+            WHERE ii.product_id = p.id AND ib.voided_at IS NULL
+         ), 0) AS received,
+         -- 소진 중 "판매" 분: 주문번호가 PR로 시작하지 않는 발송(취소 시 반환분은 상쇄).
+         -- PR 접두사 = 인플루언서 씨딩용 주문이라는 약속이라, 이 판정은 db.js 밖에서 흩어지면 안 된다.
+         COALESCE((
+           SELECT -SUM(sm.delta) FROM stock_moves sm
+            WHERE sm.product_id = p.id AND sm.reason IN ('shipment','return') AND sm.ref NOT LIKE 'PR%'
+         ), 0) AS soldConsumed,
+         COALESCE((
+           SELECT -SUM(sm.delta) FROM stock_moves sm
+            WHERE sm.product_id = p.id AND sm.reason IN ('shipment','return') AND sm.ref LIKE 'PR%'
+         ), 0) AS seedingConsumed
     FROM products p
    WHERE p.archived = 0
    ORDER BY p.brand COLLATE NOCASE, p.name COLLATE NOCASE`;
 
 const SQL_ORDERS = `
-  SELECT id, order_no AS orderNo, customer, dest, note, status, courier, tracking,
-         created_at AS createdAt, started_at AS startedAt,
-         shipped_at AS shippedAt, cancelled_at AS cancelledAt
-    FROM orders WHERE hidden = 0 ORDER BY id DESC LIMIT 200`;
+  SELECT o.id, o.order_no AS orderNo, o.customer, o.dest, o.note, o.status, o.courier, o.tracking,
+         o.box_id AS boxId, pm.size AS boxSize, o.visit_no AS visitNo,
+         o.created_at AS createdAt, o.started_at AS startedAt,
+         o.shipped_at AS shippedAt, o.cancelled_at AS cancelledAt, o.picked_up_at AS pickedUpAt
+    FROM orders o
+    LEFT JOIN packing_materials pm ON pm.id = o.box_id
+   WHERE o.hidden = 0 ORDER BY o.id DESC LIMIT 200`;
+
+const SQL_PACKING = `
+  SELECT id, size, stock, created_at AS createdAt
+    FROM packing_materials WHERE archived = 0 ORDER BY id`;
 
 const SQL_ORDER_ITEMS = `
   SELECT oi.order_id AS orderId, oi.product_id AS productId, oi.qty, oi.picked,
@@ -104,15 +150,26 @@ const SQL_INBOUND_ITEMS = `
 const SQL_ACTIVITY = "SELECT id, actor, text, kind, created_at AS ts FROM activity ORDER BY id DESC LIMIT 40";
 
 const SQL_CHECKS = `
-  SELECT id, inbound_id AS inboundId, batch, checker, memo, actor, created_at AS ts
-    FROM stock_checks ORDER BY id DESC LIMIT 50`;
+  SELECT sc.id, sc.inbound_id AS inboundId, sc.product_id AS productId,
+         p.name AS productName, p.brand AS productBrand,
+         sc.batch, sc.checker, sc.memo, sc.actor, sc.created_at AS ts
+    FROM stock_checks sc
+    LEFT JOIN products p ON p.id = sc.product_id
+   ORDER BY sc.id DESC LIMIT 50`;
+
+/** 제품마다 딱 하나, 가장 최근 점검 기록만. 개수 점검 기록 표(최근 50건)와 달리 안 잘린다. */
+const SQL_LAST_CHECK_PER_PRODUCT = `
+  SELECT sc.product_id AS productId, sc.inbound_id AS inboundId, sc.checker, sc.created_at AS ts
+    FROM stock_checks sc
+   WHERE sc.product_id IS NOT NULL
+     AND sc.id = (SELECT MAX(id) FROM stock_checks WHERE product_id = sc.product_id)`;
 
 /** 브랜드가 아직 못 본, 실장님이 일으킨 알림거리. */
 const SQL_ALERTS = `
   SELECT id, actor, text, kind, created_at AS ts
     FROM activity
    WHERE id > ? AND actor = 'warehouse'
-     AND kind IN ('stock_adjust', 'pack_done', 'order_cancel', 'stock_memo', 'stock_check')
+     AND kind IN ('stock_adjust', 'pack_done', 'pickup_done', 'order_cancel', 'stock_memo', 'stock_check')
    ORDER BY id DESC LIMIT 20`;
 
 const group = (rows, key) => {
@@ -127,33 +184,58 @@ const group = (rows, key) => {
 /** 화면 한 장을 그리는 데 필요한 전부를 한 번에 돌려준다. */
 export async function readState(db, role) {
   const seenId = Number((await getMeta(db, "brand_seen_activity_id")) || 0);
-  const [products, orders, orderItems, inbounds, inboundItems, activity, checks, alerts, version] = await Promise.all([
-    db.prepare(SQL_PRODUCTS).all(),
-    db.prepare(SQL_ORDERS).all(),
-    db.prepare(SQL_ORDER_ITEMS).all(),
-    db.prepare(SQL_INBOUNDS).all(),
-    db.prepare(SQL_INBOUND_ITEMS).all(),
-    db.prepare(SQL_ACTIVITY).all(),
-    db.prepare(SQL_CHECKS).all(),
-    db.prepare(SQL_ALERTS).bind(seenId).all(),
-    getVersion(db),
-  ]);
+  const [products, orders, orderItems, inbounds, inboundItems, activity, checks, lastChecks, packing, alerts, version] =
+    await Promise.all([
+      db.prepare(SQL_PRODUCTS).all(),
+      db.prepare(SQL_ORDERS).all(),
+      db.prepare(SQL_ORDER_ITEMS).all(),
+      db.prepare(SQL_INBOUNDS).all(),
+      db.prepare(SQL_INBOUND_ITEMS).all(),
+      db.prepare(SQL_ACTIVITY).all(),
+      db.prepare(SQL_CHECKS).all(),
+      db.prepare(SQL_LAST_CHECK_PER_PRODUCT).all(),
+      db.prepare(SQL_PACKING).all(),
+      db.prepare(SQL_ALERTS).bind(seenId).all(),
+      getVersion(db),
+    ]);
 
   const itemsByOrder = group(orderItems.results, "orderId");
   const itemsByInbound = group(inboundItems.results, "inboundId");
+
+  // 제품별로 "지금 확인해야 할 가장 최근 입고분" — 되돌리지 않은 발주 중 가장 최신 것.
+  const latestInboundByProduct = new Map();
+  for (const ib of inbounds.results) {
+    if (ib.voidedAt) continue;
+    for (const it of itemsByInbound.get(ib.id) || []) {
+      const cur = latestInboundByProduct.get(it.productId);
+      if (cur == null || ib.id > cur) latestInboundByProduct.set(it.productId, ib.id);
+    }
+  }
+  const lastCheckByProduct = new Map(lastChecks.results.map((c) => [c.productId, c]));
 
   return {
     version,
     products: products.results.map((p) => {
       const out = { ...p, available: p.stock - p.allocated };
-      // 민희님 전용 메모는 창고 화면으로 아예 내려보내지 않는다.
-      if (role !== "brand") delete out.memoBrand;
+      // 민희님 전용 메모·판매/씨딩 소진 구분은 창고 화면으로 아예 내려보내지 않는다.
+      if (role !== "brand") {
+        delete out.memoBrand;
+        delete out.soldConsumed;
+        delete out.seedingConsumed;
+      }
+      // 가장 최근 입고분에 대한 점검이 남아있어야 "점검 완료" — 새 발주가 들어오면 다시 미점검으로 돌아간다.
+      const latestInboundId = latestInboundByProduct.get(p.id);
+      const lastCheck = lastCheckByProduct.get(p.id);
+      out.checked = !!(latestInboundId != null && lastCheck && lastCheck.inboundId === latestInboundId);
+      out.lastCheckBy = lastCheck ? lastCheck.checker : null;
+      out.lastCheckAt = lastCheck ? lastCheck.ts : null;
       return out;
     }),
     orders: orders.results.map((o) => ({ ...o, items: itemsByOrder.get(o.id) || [] })),
     inbounds: inbounds.results.map((i) => ({ ...i, items: itemsByInbound.get(i.id) || [] })),
     activity: activity.results,
     checks: checks.results,
+    packing: packing.results,
     alerts: alerts.results,
   };
 }
@@ -181,6 +263,9 @@ export async function getOrderItems(db, orderId) {
 
 export const getInbound = (db, id) =>
   db.prepare("SELECT * FROM inbounds WHERE id = ?").bind(id).first();
+
+export const getPackingMaterial = (db, id) =>
+  db.prepare("SELECT * FROM packing_materials WHERE id = ?").bind(id).first();
 
 export async function getInboundItems(db, inboundId) {
   const { results } = await db

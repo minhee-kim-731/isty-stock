@@ -46,11 +46,34 @@ CREATE TABLE IF NOT EXISTS orders (
   status       TEXT NOT NULL DEFAULT 'new',  -- new | picking | shipped | cancelled
   courier      TEXT NOT NULL DEFAULT '',
   tracking     TEXT NOT NULL DEFAULT '',
+  box_id       INTEGER REFERENCES packing_materials(id),  -- 포장 완료 시 고른 상자
+  visit_no     INTEGER,               -- 이 고객의 Lococo 이용 횟수 (등록 시 직접 입력)
+  picked_up_at TEXT,                  -- 택배 기사가 실제로 픽업해 간 시각
   created_at   TEXT NOT NULL,
   started_at   TEXT,
   shipped_at   TEXT,
   cancelled_at TEXT,
   hidden       INTEGER NOT NULL DEFAULT 0   -- 1이면 화면에서 감춤 (기록은 남음)
+);
+
+-- 포장 상자 종류. 지금은 25×20×15 한 종류지만 나중에 다른 규격이 추가될 수 있다.
+CREATE TABLE IF NOT EXISTS packing_materials (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  size       TEXT NOT NULL,             -- 예: "25×20×15"
+  stock      INTEGER NOT NULL DEFAULT 0,
+  archived   INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+
+-- 포장재 재고 변동 원장. products/stock_moves 와 같은 패턴 — packing_materials.stock 은 이 합계와 항상 일치해야 한다.
+CREATE TABLE IF NOT EXISTS packing_moves (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  packing_id INTEGER NOT NULL REFERENCES packing_materials(id),
+  delta      INTEGER NOT NULL,
+  reason     TEXT    NOT NULL,   -- ship | adjust
+  ref        TEXT    NOT NULL DEFAULT '',
+  actor      TEXT    NOT NULL DEFAULT '',
+  created_at TEXT    NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
@@ -101,9 +124,18 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 CREATE TABLE IF NOT EXISTS stock_checks (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   inbound_id INTEGER REFERENCES inbounds(id),
+  product_id TEXT    REFERENCES products(id),  -- 없으면 전체(발주 단위) 점검
   batch      TEXT NOT NULL DEFAULT '',
   checker    TEXT NOT NULL,
   memo       TEXT NOT NULL DEFAULT '',
   actor      TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL
 );
+
+-- 여기서부터는 위 테이블들을 참조하는 인덱스라 순서가 중요하다 (테이블 생성 이후에 와야 함).
+CREATE INDEX IF NOT EXISTS idx_checks_product     ON stock_checks(product_id);
+CREATE INDEX IF NOT EXISTS idx_packing_moves_pm   ON packing_moves(packing_id);
+
+-- 초기 포장 상자 재고 (2026-09-07 기준 실제 보유 수량 50개).
+INSERT OR IGNORE INTO packing_materials (id, size, stock, created_at)
+  VALUES (1, '25×20×15', 50, '2026-09-07T00:00:00.000Z');

@@ -42,6 +42,41 @@
     </div>
   </div>
 </dialog>
+<dialog id="orderedit">
+  <div class="card-h"><h2>주문 정보 수정</h2></div>
+  <div class="pad" style="display:flex;flex-direction:column;gap:14px">
+    <div class="detail-no num" id="oe-orderno"></div>
+    <div class="grid2">
+      <label class="f"><span>고객명</span><input type="text" id="oe-customer"></label>
+      <label class="f"><span>몇 번째 이용 고객인가요</span><input type="number" min="1" id="oe-visitno"></label>
+    </div>
+    <label class="f"><span>배송지</span><input type="text" id="oe-dest"></label>
+    <div class="grid2">
+      <label class="f"><span>택배회사</span><input type="text" id="oe-courier"></label>
+      <label class="f"><span>송장번호</span><input type="text" id="oe-tracking"></label>
+    </div>
+    <label class="f"><span>실장님께 남길 메모</span><textarea id="oe-note"></textarea></label>
+    <div id="oe-items-section">
+      <div><span class="eyebrow">담을 제품</span><div class="itemrows" id="oe-itemrows" style="margin-top:6px"></div></div>
+      <p style="font-size:12px;color:var(--muted);margin:8px 0 0" id="oe-items-hint"></p>
+      <div class="grid2" style="align-items:end;margin-top:10px">
+        <label class="f"><span>제품 선택</span><div id="oe-pid-wrap"></div></label>
+        <div style="display:flex;gap:8px;align-items:end">
+          <label class="f" style="flex:1"><span>수량</span><input type="number" min="1" value="1" id="oe-add-qty"></label>
+          <button class="btn" data-act="oe-add-item">품목 추가</button>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:0" id="oe-cancelled-hint" hidden>
+      취소된 주문은 품목을 수정할 수 없습니다.
+    </p>
+    <div class="err" id="oe-err" style="color:var(--crit);font-size:12.5px;min-height:16px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" onclick="document.getElementById('orderedit').close()">취소</button>
+      <button class="btn primary" data-act="orderedit-save">저장</button>
+    </div>
+  </div>
+</dialog>
 <dialog id="memo">
   <div class="card-h"><h2>제품 메모</h2></div>
   <div class="pad" style="display:flex;flex-direction:column;gap:14px">
@@ -63,20 +98,24 @@
   </div>
 </dialog>
 <dialog id="check">
-  <div class="card-h"><h2>재고 개수 점검</h2></div>
+  <div class="card-h"><h2 id="check-title">재고 개수 점검</h2></div>
   <div class="pad" style="display:flex;flex-direction:column;gap:14px">
+    <div id="check-product" hidden>
+      <div class="prod-brand" id="check-brand"></div>
+      <div class="prod-name" id="check-name" style="font-size:15px"></div>
+    </div>
     <label class="f"><span>어느 발주분인가요</span>
       <select id="check-batch"></select>
     </label>
-    <label class="f"><span>누가 점검했나요</span>
+    <label class="f"><span>검수자</span>
       <select id="check-who">
-        <option value="Lococo">Lococo</option>
-        <option value="ISTY">ISTY</option>
+        <option value="Lococo">민희</option>
+        <option value="ISTY">실장님</option>
       </select>
     </label>
-    <label class="f"><span>메모</span>
+    <label class="f"><span>메모 (선택)</span>
       <textarea id="check-memo" maxlength="500" style="min-height:90px"
-        placeholder="예: 전 품목 실사 완료. Sea Kelp 1개 파손 확인, 나머지 수량 일치"></textarea>
+        placeholder="예: Sea Kelp 1개 파손 확인, 나머지 수량 일치 / 이상 없음"></textarea>
     </label>
     <div class="err" id="check-err" style="color:var(--crit);font-size:12.5px;min-height:16px"></div>
     <p style="font-size:12px;color:var(--muted);margin:0">
@@ -88,6 +127,7 @@
     </div>
   </div>
 </dialog>
+<div id="print-slip"></div>
 <script src="/app.js"></script>
 </body>
 </html>
