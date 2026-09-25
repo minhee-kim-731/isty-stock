@@ -636,15 +636,15 @@
 
     var e0 = polar(G_R + 15, G_INI), e1 = polar(G_R + 15, G_INI + G_ARCO);
     s.push('<text x="' + e0[0].toFixed(1) + '" y="' + (e0[1] + 3).toFixed(1) +
-           '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="var(--ink-3)">0</text>');
+           '" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="8" fill="var(--ink-3)">0</text>');
     s.push('<text x="' + e1[0].toFixed(1) + '" y="' + (e1[1] + 3).toFixed(1) +
-           '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="var(--ink-3)">100</text>');
+           '" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="8" fill="var(--ink-3)">100</text>');
 
     s.push('<text x="' + G_CX + '" y="' + (G_CY + 6) + '" text-anchor="middle" ' +
-           'font-family="IBM Plex Mono, monospace" font-size="27" font-weight="600" fill="var(--ink)">' +
+           'font-family="ui-monospace, Menlo, monospace" font-size="27" font-weight="600" fill="var(--ink)">' +
            Math.round(m.indice) + '</text>');
     s.push('<text x="' + G_CX + '" y="' + (G_CY + 20) + '" text-anchor="middle" ' +
-           'font-family="IBM Plex Mono, monospace" font-size="7.5" letter-spacing="1.6" fill="var(--ink-3)">' +
+           'font-family="ui-monospace, Menlo, monospace" font-size="7.5" letter-spacing="0.4" fill="var(--ink-3)">' +
            T('inf.indice') + '</text>');
     s.push('</svg>');
     return s.join('');
@@ -783,7 +783,7 @@
       s.push('<polygon points="' + pts + '" fill="var(' + R[p] + ')" stroke="var(--ground)" stroke-width="2"/>');
       var c = centroide(Z.poly);
       s.push('<text x="' + (c[0] * W).toFixed(1) + '" y="' + (c[1] * H + 3.5).toFixed(1) +
-             '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" ' +
+             '" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="9.5" ' +
              'font-weight="500" fill="' + (p >= M.oscuroDesde ? '#04080C' : '#DCF2FA') + '">' +
              nf(v, M.dec) + '</text>');
     });
