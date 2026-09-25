@@ -1200,17 +1200,22 @@
      claro. Se compone una versión aparte, con tablas y estilos en línea,
      que es lo único que sobrevive en Gmail y Outlook. */
 
-  /* Paleta del correo: crema cálido y tinta, con un rosa empolvado de marca.
+  /* Paleta del correo: azul de marca Lococo (#2966FF) sobre blanco y un
+     azul muy pálido para los bloques. Sin espaciado de letras: en coreano el
+     tracking abierto separa las sílabas y se lee mal.
      Colores explícitos en todo: Gmail y Outlook ignoran variables CSS. */
-  var CO = { fondo: '#F5EFE8', papel: '#FFFFFF', tinta: '#221C18', suave: '#6E625A', linea: '#EAE1D8',
-             acento: '#B85C4E', crema: '#FBF7F2', ok: '#5E8C6A', mid: '#C9A227', hi: '#D9793B', max: '#C2453B' };
-  var FUENTE = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+  var CO = { fondo: '#F2F5FB', papel: '#FFFFFF', tinta: '#111827', suave: '#6B7280', linea: '#E6EAF2',
+             azul: '#2966FF', palido: '#F3F6FF', borde: '#DCE5FF',
+             ok: '#2966FF', mid: '#E0A100', hi: '#F2762E', max: '#E5484D' };
+  var FUENTE = "-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
   function tituloCorreo(t, sub) {
-    return '<tr><td style="padding:30px 0 12px">' +
-      '<p style="margin:0;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:' + CO.acento +
-      ';font-weight:600">' + t + '</p>' +
-      (sub ? '<p style="margin:4px 0 0;font-size:12.5px;color:' + CO.suave + '">' + sub + '</p>' : '') +
+    return '<tr><td style="padding:34px 0 14px">' +
+      '<table role="presentation" cellpadding="0" cellspacing="0"><tr>' +
+      '<td style="width:4px;background:' + CO.azul + ';border-radius:2px">&nbsp;</td>' +
+      '<td style="padding-left:10px;font-size:18px;font-weight:700;color:' + CO.tinta + ';letter-spacing:-0.3px">' + t + '</td>' +
+      '</tr></table>' +
+      (sub ? '<p style="margin:6px 0 0;font-size:13px;color:' + CO.suave + ';letter-spacing:-0.2px">' + sub + '</p>' : '') +
       '</td></tr>';
   }
 
@@ -1219,8 +1224,8 @@
   function barraCorreo(pct, color) {
     pct = Math.max(3, Math.min(100, Math.round(pct)));
     return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">' +
-      '<tr><td width="' + pct + '%" style="height:6px;background:' + color + ';border-radius:3px 0 0 3px;font-size:0;line-height:0">&nbsp;</td>' +
-      (pct < 100 ? '<td style="height:6px;background:' + CO.linea + ';font-size:0;line-height:0">&nbsp;</td>' : '') +
+      '<tr><td width="' + pct + '%" style="height:8px;background:' + color + ';border-radius:4px;font-size:0;line-height:0">&nbsp;</td>' +
+      (pct < 100 ? '<td style="height:8px;background:' + CO.palido + ';border-radius:0 4px 4px 0;font-size:0;line-height:0">&nbsp;</td>' : '') +
       '</tr></table>';
   }
 
@@ -1228,59 +1233,58 @@
     var g = res.global, H = [];
     var fecha = S.inicio.toLocaleDateString(I.idioma() === 'ko' ? 'ko-KR' : I.idioma() === 'en' ? 'en-GB' : 'es-ES',
       { day: 'numeric', month: 'long', year: 'numeric' });
+    var ls = ';letter-spacing:-0.2px';
 
     H.push('<div style="margin:0;padding:28px 12px;background:' + CO.fondo + ';font-family:' + FUENTE + '">' +
       '<table role="presentation" align="center" width="100%" cellpadding="0" cellspacing="0" ' +
-      'style="max-width:600px;margin:0 auto;background:' + CO.papel + ';border-radius:14px;border-collapse:separate">' +
-      '<tr><td style="padding:34px 30px 30px">' +
-      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">');
+      'style="max-width:600px;margin:0 auto;background:' + CO.papel + ';border-radius:20px;border-collapse:separate;overflow:hidden">');
 
-    /* Cabecera */
-    H.push('<tr><td style="padding-bottom:22px;border-bottom:1px solid ' + CO.linea + '">' +
+    /* Hero azul */
+    H.push('<tr><td style="background:' + CO.azul + ';padding:30px 28px 28px;border-radius:20px 20px 0 0">' +
       '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
-      '<td style="font-size:18px;letter-spacing:5px;font-weight:700;color:' + CO.tinta + '">LOCOCO</td>' +
-      '<td align="right" style="font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:' + CO.suave + '">' +
-      'Espejo · Oki Doki Labs<br>' + esc(fecha) + '</td></tr></table></td></tr>');
-
-    /* Hero: tipo Baumann en cuatro fichas */
-    H.push('<tr><td style="padding:30px 0 6px">' +
-      '<p style="margin:0 0 6px;font-size:13px;color:' + CO.suave + '">' + T('correo.hola') + '</p>' +
-      '<h1 style="margin:0 0 8px;font-size:27px;line-height:1.25;font-weight:700;color:' + CO.tinta + '">' +
+      '<td style="font-size:17px;font-weight:800;color:#FFFFFF;letter-spacing:0.5px">LOCOCO</td>' +
+      '<td align="right" style="font-size:12px;color:#DCE5FF' + ls + '">' + esc(fecha) + '</td></tr></table>' +
+      '<p style="margin:30px 0 6px;font-size:14px;color:#DCE5FF' + ls + '">' + T('correo.hola') + '</p>' +
+      '<h1 style="margin:0 0 8px;font-size:30px;line-height:1.25;font-weight:800;color:#FFFFFF;letter-spacing:-0.8px">' +
       esc(TX(g.patron.etiqueta)) + '</h1>' +
-      '<p style="margin:0;font-size:14px;line-height:1.6;color:' + CO.suave + '">' +
-      TF('inf.tono', { t: esc(TX(g.tono.cat)), i: nf(g.ITA, 1), c: g.tono.codigo }) + '</p></td></tr>');
-
-    H.push('<tr><td style="padding:22px 0 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" ' +
-      'style="border-collapse:separate;border-spacing:6px 0"><tr>');
-    ['DO', 'SR', 'PN', 'WT'].forEach(function (k) {
+      '<p style="margin:0;font-size:14px;line-height:1.6;color:#E8EEFF' + ls + '">' +
+      TF('inf.tono', { t: esc(TX(g.tono.cat)), i: nf(g.ITA, 1), c: g.tono.codigo }) + '</p>' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" ' +
+      'style="margin-top:24px;border-collapse:separate;border-spacing:0"><tr>');
+    ['DO', 'SR', 'PN', 'WT'].forEach(function (k, i) {
       var e = perfil.ejes[k];
-      H.push('<td width="25%" align="center" style="background:' + CO.crema + ';border-radius:10px;padding:16px 4px 13px">' +
-        '<div style="font-size:30px;font-weight:700;color:' + CO.acento + ';font-family:Georgia,serif;line-height:1">' + e.letra + '</div>' +
-        '<div style="margin-top:7px;font-size:11.5px;line-height:1.35;color:' + CO.tinta + '">' + esc(TX(e.etiqueta)) + '</div></td>');
+      H.push('<td width="25%" align="center" style="padding:0 ' + (i < 3 ? '6px' : '0') + ' 0 0">' +
+        '<div style="background:#FFFFFF;border-radius:14px;padding:16px 4px 14px">' +
+        '<div style="font-size:30px;font-weight:800;color:' + CO.azul + ';line-height:1">' + e.letra + '</div>' +
+        '<div style="margin-top:8px;font-size:12.5px;font-weight:600;line-height:1.3;color:' + CO.tinta + ls + '">' +
+        esc(TX(e.etiqueta)) + '</div></div></td>');
     });
     H.push('</tr></table>' +
-      '<p style="margin:10px 6px 0;font-size:11.5px;color:' + CO.suave + '">' + T('correo.tipo') + ' · <b style="color:' +
-      CO.tinta + ';letter-spacing:2px">' + perfil.codigo + '</b></p></td></tr>');
+      '<p style="margin:14px 0 0;font-size:12.5px;color:#DCE5FF' + ls + '">' + T('correo.tipo') +
+      ' <b style="color:#FFFFFF;letter-spacing:1px">' + perfil.codigo + '</b></p></td></tr>');
+
+    H.push('<tr><td style="padding:4px 28px 30px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">');
 
     /* Medición óptica */
     H.push(tituloCorreo(T('inf.s1'), T('correo.medido')));
     H.push('<tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">');
-    res.metricas.forEach(function (m) {
+    res.metricas.forEach(function (m, i) {
       var col = CO[m.banda.clave] || CO.mid;
-      H.push('<tr><td style="padding:11px 0 12px;border-bottom:1px solid ' + CO.linea + '">' +
+      H.push('<tr><td style="padding:14px 0;' + (i ? 'border-top:1px solid ' + CO.linea : '') + '">' +
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
-        '<td style="font-size:14px;font-weight:600;color:' + CO.tinta + '">' + esc(TX(m.nombre)) + '</td>' +
-        '<td align="right" style="font-size:11px;font-weight:600;color:' + col + ';white-space:nowrap">' +
-        esc(TX(m.banda.etiqueta)) + '</td></tr></table>' +
-        '<div style="padding:7px 0 5px">' + barraCorreo(m.indice, col) + '</div>' +
-        '<div style="font-size:11.5px;color:' + CO.suave + ';font-family:Menlo,Consolas,monospace">' + esc(TX(m.fisico)) + '</div>' +
+        '<td style="font-size:15px;font-weight:700;color:' + CO.tinta + ls + '">' + esc(TX(m.nombre)) + '</td>' +
+        '<td align="right"><span style="display:inline-block;padding:3px 10px;border-radius:10px;background:' +
+        (m.banda.clave === 'ok' ? CO.palido : '#FFF6EC') + ';font-size:12px;font-weight:700;color:' + col + ls + '">' +
+        esc(TX(m.banda.etiqueta)) + '</span></td></tr></table>' +
+        '<div style="padding:9px 0 6px">' + barraCorreo(m.indice, CO.azul) + '</div>' +
+        '<div style="font-size:12px;color:' + CO.suave + ls + '">' + esc(TX(m.fisico)) + '</div>' +
         '</td></tr>');
     });
     H.push('</table></td></tr>');
 
     /* Lo que la cámara no mide: se declara como tal */
     H.push(tituloCorreo(T('inf.s3'), T('correo.declarado')));
-    H.push('<tr><td style="background:' + CO.crema + ';border-radius:10px;padding:16px 18px">' +
+    H.push('<tr><td style="background:' + CO.palido + ';border-radius:14px;padding:8px 18px">' +
       '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">');
     var filas = [[T('inf.hidrat'), TX(perfil.hidratacion.etiqueta)]];
     ['DO', 'SR', 'PN', 'WT'].forEach(function (k) {
@@ -1288,8 +1292,10 @@
       filas.push([TX(d.neg) + ' · ' + TX(d.pos), TX(perfil.ejes[k].etiqueta)]);
     });
     filas.forEach(function (f, i) {
-      H.push('<tr><td style="padding:7px 0;font-size:13px;color:' + CO.suave + (i ? '' : ';font-weight:600') + '">' + esc(f[0]) + '</td>' +
-        '<td align="right" style="padding:7px 0;font-size:13px;font-weight:600;color:' + CO.tinta + '">' + esc(f[1]) + '</td></tr>');
+      H.push('<tr><td style="padding:10px 0;font-size:14px;color:' + CO.suave + ls +
+        (i ? ';border-top:1px solid ' + CO.borde : '') + '">' + esc(f[0]) + '</td>' +
+        '<td align="right" style="padding:10px 0;font-size:14px;font-weight:700;color:' + (i ? CO.tinta : CO.azul) + ls +
+        (i ? ';border-top:1px solid ' + CO.borde : '') + '">' + esc(f[1]) + '</td></tr>');
     });
     H.push('</table></td></tr>');
 
@@ -1298,38 +1304,38 @@
       H.push(tituloCorreo(T('inf.sProd'), T('correo.pasos')));
       rut.pasos.forEach(function (paso, i) {
         H.push('<tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" ' +
-          'style="border:1px solid ' + CO.linea + ';border-radius:10px;border-collapse:separate"><tr>' +
-          '<td width="46" align="center" valign="top" style="padding:16px 0 0 14px">' +
-          '<div style="width:30px;height:30px;line-height:30px;border-radius:15px;background:' + CO.acento +
-          ';color:#FFFFFF;font-size:14px;font-weight:700;text-align:center">' + (i + 1) + '</div></td>' +
-          '<td style="padding:14px 16px 14px 12px">' +
-          '<div style="font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:' + CO.suave + '">' + esc(TX(paso.ranura)) + '</div>' +
-          '<div style="margin-top:3px;font-size:15px;line-height:1.35;color:' + CO.tinta + '"><b>' + esc(paso.producto.b) + '</b> ' +
+          'style="border:1px solid ' + CO.linea + ';border-radius:14px;border-collapse:separate"><tr>' +
+          '<td width="44" valign="top" style="padding:18px 0 0 16px">' +
+          '<div style="width:28px;height:28px;line-height:28px;border-radius:14px;background:' + CO.azul +
+          ';color:#FFFFFF;font-size:14px;font-weight:800;text-align:center">' + (i + 1) + '</div></td>' +
+          '<td style="padding:16px 12px 16px 10px">' +
+          '<div style="font-size:12px;font-weight:700;color:' + CO.azul + ls + '">' + esc(TX(paso.ranura)) + '</div>' +
+          '<div style="margin-top:4px;font-size:15px;line-height:1.4;color:' + CO.tinta + ls + '"><b>' + esc(paso.producto.b) + '</b><br>' +
           esc(paso.producto.n) + '</div>' +
-          (paso.cubre ? '<div style="margin-top:5px;font-size:12px;color:' + CO.acento + '">' + T('inf.cubre') + ' · ' + esc(TX(paso.cubre)) + '</div>' : '') +
-          '</td><td align="right" valign="top" style="padding:16px 16px 0 0;font-size:14px;font-weight:600;color:' + CO.tinta +
+          (paso.cubre ? '<div style="margin-top:6px;font-size:12px;color:' + CO.suave + ls + '">' + T('inf.cubre') + ' · ' + esc(TX(paso.cubre)) + '</div>' : '') +
+          '</td><td align="right" valign="top" style="padding:18px 16px 0 0;font-size:15px;font-weight:800;color:' + CO.tinta +
           ';white-space:nowrap">' + esc(paso.producto.p) + ' €</td></tr></table></td></tr>');
       });
     }
 
     /* Activos, como etiquetas */
     H.push(tituloCorreo(T('inf.s4'), ''));
-    H.push('<tr><td style="line-height:2.3">');
+    H.push('<tr><td style="line-height:2.4">');
     rec.activos.slice(0, 8).forEach(function (a) {
-      H.push('<span style="display:inline-block;margin:0 6px 6px 0;padding:5px 12px;border-radius:14px;background:' +
-        CO.crema + ';border:1px solid ' + CO.linea + ';font-size:12.5px;line-height:1.4;color:' + CO.tinta + '">' + esc(TX(a.n)) + '</span>');
+      H.push('<span style="display:inline-block;margin:0 6px 8px 0;padding:6px 13px;border-radius:16px;background:' +
+        CO.palido + ';font-size:13px;font-weight:600;line-height:1.4;color:' + CO.azul + ls + '">' + esc(TX(a.n)) + '</span>');
     });
     H.push('</td></tr>');
 
     /* Pie */
-    H.push('<tr><td style="padding:26px 0 0"><p style="margin:0;padding:14px 16px;background:' + CO.crema +
-      ';border-radius:10px;font-size:11.5px;line-height:1.65;color:' + CO.suave + '">' + T('legal') + '</p>' +
-      '<p style="margin:14px 0 0;font-size:11px;line-height:1.6;color:' + CO.suave + '">' + T('correo.privacidad') + '</p>' +
+    H.push('<tr><td style="padding:28px 0 0"><p style="margin:0;padding:16px 18px;background:' + CO.fondo +
+      ';border-radius:14px;font-size:12px;line-height:1.7;color:' + CO.suave + ls + '">' + T('legal') + '</p>' +
+      '<p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:' + CO.suave + ls + '">' + T('correo.privacidad') + '</p>' +
       '</td></tr>');
 
     H.push('</table></td></tr></table>' +
-      '<p style="margin:16px 0 0;text-align:center;font-size:10.5px;letter-spacing:1.5px;color:' + CO.suave + '">' +
-      'LOCOCO × OKI DOKI LABS · MADRID 2026</p></div>');
+      '<p style="margin:18px 0 0;text-align:center;font-size:12px;color:' + CO.suave + ls + '">' +
+      'Lococo × Oki Doki Labs · Madrid 2026</p></div>');
     return H.join('');
   }
 
