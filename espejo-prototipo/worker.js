@@ -83,8 +83,39 @@ async function enviar(env, para, asunto, html) {
    página aparte con un código guardado como secreto (ADMIN_CODE), nunca en
    el repositorio. La comparación es de tiempo constante para no filtrar el
    código carácter a carácter. Sin secreto configurado, la ruta no existe. */
+/* Bloqueo por intentos: el código es corto (lo elige Lococo), así que sin
+   límite se podría adivinar probando. 10 fallos en 10 minutos desde la misma
+   IP bloquean esa IP hasta que pasen los 10 minutos. */
+const MAX_FALLOS = 10, VENTANA_MS = 10 * 60 * 1000;
+let tablaFallos = false;
+async function bloqueado(request, env) {
+  const db = env.espejo_leads;
+  if (!tablaFallos) {
+    await db.prepare('CREATE TABLE IF NOT EXISTS admin_fallos (ip TEXT NOT NULL, t INTEGER NOT NULL)').run();
+    tablaFallos = true;
+  }
+  const ip = request.headers.get('cf-connecting-ip') || 'local';
+  const desde = Date.now() - VENTANA_MS;
+  const fila = await db.prepare('SELECT COUNT(*) AS n FROM admin_fallos WHERE ip = ? AND t > ?').bind(ip, desde).first();
+  return { ip, lleno: (fila ? fila.n : 0) >= MAX_FALLOS };
+}
+async function registrarFallo(env, ip) {
+  await env.espejo_leads.batch([
+    env.espejo_leads.prepare('INSERT INTO admin_fallos (ip, t) VALUES (?, ?)').bind(ip, Date.now()),
+    env.espejo_leads.prepare('DELETE FROM admin_fallos WHERE t < ?').bind(Date.now() - VENTANA_MS)
+  ]);
+}
+
 async function autorizado(request, env) {
   if (!env.ADMIN_CODE) return false;
+  const b = await bloqueado(request, env);
+  if (b.lleno) return 'bloqueado';
+  const ok = await coincide(request, env);
+  if (!ok) await registrarFallo(env, b.ip);
+  return ok;
+}
+
+async function coincide(request, env) {
   const enc = new TextEncoder();
   const [a, b] = await Promise.all([
     crypto.subtle.digest('SHA-256', enc.encode(request.headers.get('x-admin-code') || '')),
@@ -172,6 +203,7 @@ function error(t){ var e = document.getElementById('err'); e.textContent = t; e.
 function cargar(){
   return pedir('/api/admin/leads').then(function(r){
     if (r.status === 401) throw new Error('코드가 맞지 않습니다.');
+    if (r.status === 429) throw new Error('틀린 코드를 여러 번 넣어서 10분간 잠겼습니다. 잠시 후 다시 시도하세요.');
     if (!r.ok) throw new Error('불러오지 못했습니다 (' + r.status + ').');
     return r.json();
   }).then(function(d){
@@ -394,14 +426,14 @@ export default {
       });
     }
     if (url.pathname === '/api/admin/leads') {
-      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }
       const { results } = await env.espejo_leads.prepare(
         'SELECT id, email, idioma, consentimiento, creado FROM leads ORDER BY creado DESC'
       ).all();
       return json({ leads: results });
     }
     if (url.pathname === '/api/admin/analisis') {
-      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }
       await asegurarTabla(env.espejo_leads);
       const { results } = await env.espejo_leads.prepare(
         `SELECT id, creado, idioma, modo, codigo, tono, ita, patron, confianza, datos, email,
@@ -411,7 +443,7 @@ export default {
       return json({ analisis: results });
     }
     if (url.pathname === '/api/admin/foto') {
-      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }
       const id = Number(url.searchParams.get('id'));
       if (!Number.isInteger(id) || id <= 0) return json({ error: 'id' }, 400);
       const fila = await env.espejo_leads.prepare('SELECT foto FROM analisis WHERE id = ?').bind(id).first();
@@ -424,7 +456,7 @@ export default {
     if (url.pathname === '/api/admin/borrar-analisis') {
       if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
       if (!mismoOrigen(request, url)) return json({ error: 'origen' }, 403);
-      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }
       let cuerpo;
       try { cuerpo = await request.json(); } catch { return json({ error: 'json' }, 400); }
       const id = Number(cuerpo.id);
@@ -435,7 +467,7 @@ export default {
     if (url.pathname === '/api/admin/borrar') {
       if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
       if (!mismoOrigen(request, url)) return json({ error: 'origen' }, 403);
-      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }
       let cuerpo;
       try { cuerpo = await request.json(); } catch { return json({ error: 'json' }, 400); }
       const id = Number(cuerpo.id);
