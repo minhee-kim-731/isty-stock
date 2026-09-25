@@ -1,11 +1,1 @@
-node_modules/
-.wrangler/
-data/
-.DS_Store
-
-# 접속 코드 — 저장소에 올리지 않습니다
-.dev.vars
-ACCESS.local.md
-
-# 데이터 백업 — 고객 이름·주소가 들어 있어 올리지 않습니다
-backups/
+dist/

@@ -1,27 +1,29 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "isty-stock",
-  "main": "src/index.js",
-  "compatibility_date": "2026-08-01",
-
-  // 화면(정적 파일). /api/* 가 아닌 요청은 전부 여기서 처리된다.
+  // ESPEJO · Cloudflare Worker.
+  //
+  // `main` existe para tres rutas: capacidad, alta de correo y envío del
+  // informe. Todo lo demás lo sirve el binding ASSETS desde dist/. El análisis
+  // ocurre entero en el navegador y ninguna imagen llega hasta aquí.
+  //
+  //   node build.mjs && npx wrangler deploy
+  //
+  "name": "lococo-skin-type-analysis",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-14",
   "assets": {
-    "directory": "./public",
-    "binding": "ASSETS"
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
   },
-
-  // D1 데이터베이스 (WEUR — 실장님 쪽 응답을 우선).
   "d1_databases": [
     {
-      "binding": "DB",
-      "database_name": "isty",
-      "database_id": "2abbfe65-244b-4594-a720-07b1b7a24890"
+      // Región weur: el puesto está en Madrid y los correos son de residentes
+      // en la UE. Mantener el dato en Europa evita una transferencia
+      // internacional que habría que justificar.
+      "binding": "espejo_leads",
+      "database_name": "espejo-leads",
+      "database_id": "29d4bdbe-a1c0-4cb5-8ecb-3cfaef1fe466"
     }
   ],
-
-  // 접속 주소는 workers.dev 하나만. 버전별 프리뷰 URL 은 만들지 않는다.
-  "workers_dev": true,
-  "preview_urls": false,
-
   "observability": { "enabled": true }
 }
