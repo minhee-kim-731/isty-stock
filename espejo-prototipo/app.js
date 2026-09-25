@@ -42,6 +42,7 @@
     qIndex: 0,
     seguidas: 0,
     contando: false,
+    listoCaptura: false,
     condiciones: null,
     inicio: new Date(),
     modoFoto: 'directo'
@@ -313,8 +314,17 @@
     $('aro').classList.toggle('listo', todo);
     $('pista').textContent = todo ? T('cap.ok') : (falla ? T('chk.' + falla.k + '.p') : '');
 
-    if (todo) S.seguidas++; else { S.seguidas = 0; abortarCuenta(); }
+    /* Durante la cuenta se toleran parpadeos de hasta dos fotogramas
+       (~250 ms): una condición que roza el umbral la reiniciaba sin fin y la
+       captura no llegaba nunca. La tolerancia sólo afecta a la cuenta; el
+       fotograma que se captura tiene que cumplir las cinco condiciones. */
+    if (todo) { S.seguidas++; S.fallos = 0; }
+    else {
+      S.seguidas = 0; S.fallos = (S.fallos || 0) + 1;
+      if (!S.contando || S.fallos >= 3) abortarCuenta();
+    }
     $('btn-capturar').disabled = !todo;
+    if (S.listoCaptura && todo) { capturar(); return; }
     if (S.seguidas >= 5 && !S.contando) iniciarCuenta();
   }
 
@@ -327,20 +337,23 @@
     tCuenta = setInterval(function () {
       n--;
       if (n <= 0) {
-        clearInterval(tCuenta); box.hidden = true; $('barrido').classList.remove('on');
-        S.contando = false; capturar();
+        clearInterval(tCuenta); box.hidden = true;
+        /* No se dispara aquí: el bucle captura en el primer fotograma que
+           cumpla las cinco condiciones, que suele ser este mismo. */
+        S.listoCaptura = true;
       }
       else box.textContent = n;
     }, 800);
   }
   function abortarCuenta() {
     if (!S.contando) return;
-    clearInterval(tCuenta); S.contando = false;
+    clearInterval(tCuenta); S.contando = false; S.listoCaptura = false;
     $('cuenta').hidden = true; $('barrido').classList.remove('on');
   }
 
   function capturar() {
     abortarCuenta();
+    S.fallos = 0;
     var pv = $('preview');
     pv.width = E.CANVAS_W; pv.height = E.CANVAS_H;
     pv.getContext('2d').drawImage(S.lienzo, 0, 0);
@@ -366,7 +379,8 @@
     $('btn-repetir').hidden = true;
     E.reiniciarEncuadre();
     $('aro').classList.remove('listo');
-    S.seguidas = 0;
+    S.seguidas = 0; S.fallos = 0;
+    abortarCuenta();   // una cuenta a medias de la sesión anterior no debe disparar aquí
     S.modoFoto = 'directo';
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {

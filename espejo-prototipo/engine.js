@@ -249,10 +249,39 @@
     var lumMedia = sum / n;
 
     // 2 · Uniformidad — desequilibrio izquierda/derecha (luz lateral)
-    var sumI = 0, nI = 0, sumD = 0, nD = 0, mitad = (rx0 + rx1) >> 1;
+    /* Se mide SOLO sobre píxeles de piel y se parte por el centroide de la
+       cara, no por el centro del retículo. Medido sobre el retículo entero,
+       una pared más clara a un lado suspendía la prueba con la cara bien
+       iluminada, y el fondo diluía una luz lateral real sobre la cara: la
+       prueba fallaba cuando no debía y pasaba cuando no debía. */
+    var esPiel = new Uint8Array(W * H), nPiel = 0, sumX = 0;
     for (y = ry0; y < ry1; y++) {
-      for (x = rx0; x < mitad; x++) { sumI += gris[y * W + x]; nI++; }
-      for (x = mitad; x < rx1; x++) { sumD += gris[y * W + x]; nD++; }
+      for (x = rx0; x < rx1; x++) {
+        var op = (((y * sy) | 0) * CANVAS_W + ((x * sx) | 0)) * 4;
+        var pr = px[op], pg = px[op + 1], pb = px[op + 2];
+        var pY = 0.299 * pr + 0.587 * pg + 0.114 * pb;
+        var pCb = 128 - 0.168736 * pr - 0.331264 * pg + 0.5 * pb;
+        var pCr = 128 + 0.5 * pr - 0.418688 * pg - 0.081312 * pb;
+        if (pY > 40 && pCb > 72 && pCb < 137 && pCr > 130 && pCr < 182) {
+          esPiel[y * W + x] = 1; nPiel++; sumX += x;
+        }
+      }
+    }
+    var sumI = 0, nI = 0, sumD = 0, nD = 0, mitad;
+    if (nPiel > 400) {
+      mitad = sumX / nPiel;
+      for (y = ry0; y < ry1; y++) for (x = rx0; x < rx1; x++) {
+        if (!esPiel[y * W + x]) continue;
+        if (x < mitad) { sumI += gris[y * W + x]; nI++; } else { sumD += gris[y * W + x]; nD++; }
+      }
+    }
+    if (nI < 100 || nD < 100) {
+      // Sin cara suficiente no hay piel que comparar: se vuelve al retículo.
+      sumI = nI = sumD = nD = 0; mitad = (rx0 + rx1) >> 1;
+      for (y = ry0; y < ry1; y++) {
+        for (x = rx0; x < mitad; x++) { sumI += gris[y * W + x]; nI++; }
+        for (x = mitad; x < rx1; x++) { sumD += gris[y * W + x]; nD++; }
+      }
     }
     var mI = sumI / nI, mD = sumD / nD;
     var desequilibrio = Math.abs(mI - mD) / Math.max(1, (mI + mD) / 2);
@@ -283,14 +312,24 @@
     }
     var fraccionPiel = piel / tot;
 
-    // 5 · Estabilidad — diferencia media entre fotogramas consecutivos
+    // 5 · Estabilidad — diferencia entre fotogramas consecutivos
+    /* Por bloques de 8x8 y percentil 95, no media píxel a píxel. La media por
+       píxel medía sobre todo el ruido del sensor: con la cara quieta, el
+       grano de una sala normal ya la suspendía, mientras que un
+       desplazamiento real de la cara (que sólo cambia los bordes) apenas la
+       movía. Promediar el bloque cancela el ruido (√64 = 8 veces menos) y el
+       percentil 95 recoge los bordes, que es donde se ve el movimiento. */
+    var BW = W >> 3, BH = H >> 3, bloques = new Float32Array(BW * BH), bx, by;
+    for (y = 0; y < BH * 8; y++) for (x = 0; x < BW * 8; x++) bloques[(y >> 3) * BW + (x >> 3)] += gris[y * W + x];
+    for (k = 0; k < bloques.length; k++) bloques[k] /= 64;
     var movimiento = 1;
-    if (frameAnterior && frameAnterior.length === gris.length) {
-      var dif = 0;
-      for (k = 0; k < gris.length; k++) dif += Math.abs(gris[k] - frameAnterior[k]);
-      movimiento = dif / gris.length;
+    if (frameAnterior && frameAnterior.length === bloques.length) {
+      var difs = new Float32Array(bloques.length);
+      for (k = 0; k < bloques.length; k++) difs[k] = Math.abs(bloques[k] - frameAnterior[k]);
+      Array.prototype.sort.call(difs);
+      movimiento = difs[Math.floor(difs.length * 0.95)];
     }
-    frameAnterior = gris;
+    frameAnterior = bloques;
 
     return {
       exposicion:   { valor: lumMedia,      ok: lumMedia > 92 && lumMedia < 196,
