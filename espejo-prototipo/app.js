@@ -578,11 +578,11 @@
   /* oscuroDesde: paso de la rampa a partir del cual el relleno es lo bastante
      luminoso como para que la etiqueta tenga que ir en tinta oscura. */
   var MAPAS = {
-    eritema: { nom: 'mapa.eritema', uni: { es: 'UI', en: 'units' }, dom: [10, 34], dec: 1, oscuroDesde: 3,
+    eritema: { nom: 'mapa.eritema', uni: { es: 'UI', en: 'units', ko: 'UI' }, dom: [10, 34], dec: 1, oscuroDesde: 3,
                val: function (z) { return z.EI; } },
-    brillo:  { nom: 'mapa.brillo',  uni: { es: '%', en: '%' }, dom: [0, 40],  dec: 0, oscuroDesde: 3,
+    brillo:  { nom: 'mapa.brillo',  uni: { es: '%', en: '%', ko: '%' }, dom: [0, 40],  dec: 0, oscuroDesde: 3,
                val: function (z) { return z.brilloArea * 100; } },
-    textura: { nom: 'mapa.textura', uni: { es: 'σL*', en: 'σL*' }, dom: [0.4, 3.4], dec: 2, oscuroDesde: 4,
+    textura: { nom: 'mapa.textura', uni: { es: 'σL*', en: 'σL*', ko: 'σL*' }, dom: [0.4, 3.4], dec: 2, oscuroDesde: 4,
                val: function (z) { return z.textura; } }
   };
 
@@ -1200,81 +1200,136 @@
      claro. Se compone una versión aparte, con tablas y estilos en línea,
      que es lo único que sobrevive en Gmail y Outlook. */
 
-  function filaCorreo(izq, der) {
-    return '<tr>' +
-      '<td style="padding:9px 0;border-bottom:1px solid #E4E9E5;font-size:14px;color:#2A3330">' +
-        izq + '</td>' +
-      '<td style="padding:9px 0;border-bottom:1px solid #E4E9E5;font-size:13px;color:#5A6560;' +
-        'text-align:right;font-family:Menlo,Consolas,monospace;white-space:nowrap">' + der + '</td>' +
-      '</tr>';
+  /* Paleta del correo: crema cálido y tinta, con un rosa empolvado de marca.
+     Colores explícitos en todo: Gmail y Outlook ignoran variables CSS. */
+  var CO = { fondo: '#F5EFE8', papel: '#FFFFFF', tinta: '#221C18', suave: '#6E625A', linea: '#EAE1D8',
+             acento: '#B85C4E', crema: '#FBF7F2', ok: '#5E8C6A', mid: '#C9A227', hi: '#D9793B', max: '#C2453B' };
+  var FUENTE = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
+  function tituloCorreo(t, sub) {
+    return '<tr><td style="padding:30px 0 12px">' +
+      '<p style="margin:0;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:' + CO.acento +
+      ';font-weight:600">' + t + '</p>' +
+      (sub ? '<p style="margin:4px 0 0;font-size:12.5px;color:' + CO.suave + '">' + sub + '</p>' : '') +
+      '</td></tr>';
+  }
+
+  /* Barra horizontal hecha con dos celdas: es la única forma de dibujar un
+     indicador que se vea igual en Gmail, Apple Mail y Outlook. */
+  function barraCorreo(pct, color) {
+    pct = Math.max(3, Math.min(100, Math.round(pct)));
+    return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">' +
+      '<tr><td width="' + pct + '%" style="height:6px;background:' + color + ';border-radius:3px 0 0 3px;font-size:0;line-height:0">&nbsp;</td>' +
+      (pct < 100 ? '<td style="height:6px;background:' + CO.linea + ';font-size:0;line-height:0">&nbsp;</td>' : '') +
+      '</tr></table>';
   }
 
   function correoHTML(res, perfil, rec, rut) {
-    var g = res.global;
-    var H = [];
-    H.push('<div style="margin:0;padding:24px 16px;background:#F2F4F0;' +
-      'font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">');
-    H.push('<div style="max-width:600px;margin:0 auto;background:#FFFFFF;padding:28px 26px;' +
-      'border:1px solid #DDE3DE">');
+    var g = res.global, H = [];
+    var fecha = S.inicio.toLocaleDateString(I.idioma() === 'ko' ? 'ko-KR' : I.idioma() === 'en' ? 'en-GB' : 'es-ES',
+      { day: 'numeric', month: 'long', year: 'numeric' });
 
-    H.push('<p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;' +
-      'color:#7A857F">ESPEJO · LOCOCO × OKI DOKI LABS</p>');
-    H.push('<h1 style="margin:10px 0 4px;font-size:25px;line-height:1.25;color:#12161A">' +
-      esc(TX(g.patron.etiqueta)) + '</h1>');
-    H.push('<p style="margin:0 0 6px;font-size:15px;color:#41504A">' +
-      TF('inf.tono', { t: esc(TX(g.tono.cat)), i: nf(g.ITA, 1), c: g.tono.codigo }) + '</p>');
-    H.push('<p style="margin:0 0 18px;font-size:22px;letter-spacing:5px;color:#1F6F63;' +
-      'font-family:Menlo,Consolas,monospace">' + perfil.codigo + '</p>');
-    H.push('<p style="margin:0 0 22px;font-size:13.5px;line-height:1.6;color:#5A6560">' +
-      T('correo.intro') + '</p>');
+    H.push('<div style="margin:0;padding:28px 12px;background:' + CO.fondo + ';font-family:' + FUENTE + '">' +
+      '<table role="presentation" align="center" width="100%" cellpadding="0" cellspacing="0" ' +
+      'style="max-width:600px;margin:0 auto;background:' + CO.papel + ';border-radius:14px;border-collapse:separate">' +
+      '<tr><td style="padding:34px 30px 30px">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">');
 
-    /* Medición */
-    H.push('<h2 style="margin:0 0 8px;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;' +
-      'color:#1F6F63">' + T('inf.s1') + '</h2>');
-    H.push('<table style="width:100%;border-collapse:collapse;margin-bottom:22px">');
-    res.metricas.forEach(function (m) {
-      H.push(filaCorreo(esc(TX(m.nombre)) + ' <span style="color:#7A857F">· ' +
-        esc(TX(m.banda.etiqueta)) + '</span>', esc(TX(m.fisico))));
-    });
-    H.push('</table>');
+    /* Cabecera */
+    H.push('<tr><td style="padding-bottom:22px;border-bottom:1px solid ' + CO.linea + '">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
+      '<td style="font-size:18px;letter-spacing:5px;font-weight:700;color:' + CO.tinta + '">LOCOCO</td>' +
+      '<td align="right" style="font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:' + CO.suave + '">' +
+      'Espejo · Oki Doki Labs<br>' + esc(fecha) + '</td></tr></table></td></tr>');
 
-    /* Perfil */
-    H.push('<h2 style="margin:0 0 8px;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;' +
-      'color:#1F6F63">' + T('inf.s3') + '</h2>');
-    H.push('<table style="width:100%;border-collapse:collapse;margin-bottom:22px">');
+    /* Hero: tipo Baumann en cuatro fichas */
+    H.push('<tr><td style="padding:30px 0 6px">' +
+      '<p style="margin:0 0 6px;font-size:13px;color:' + CO.suave + '">' + T('correo.hola') + '</p>' +
+      '<h1 style="margin:0 0 8px;font-size:27px;line-height:1.25;font-weight:700;color:' + CO.tinta + '">' +
+      esc(TX(g.patron.etiqueta)) + '</h1>' +
+      '<p style="margin:0;font-size:14px;line-height:1.6;color:' + CO.suave + '">' +
+      TF('inf.tono', { t: esc(TX(g.tono.cat)), i: nf(g.ITA, 1), c: g.tono.codigo }) + '</p></td></tr>');
+
+    H.push('<tr><td style="padding:22px 0 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" ' +
+      'style="border-collapse:separate;border-spacing:6px 0"><tr>');
     ['DO', 'SR', 'PN', 'WT'].forEach(function (k) {
-      H.push(filaCorreo(esc(TX(perfil.ejes[k].etiqueta)),
-        (perfil.ejes[k].norm >= 0 ? '+' : '') + nf(perfil.ejes[k].norm, 2)));
+      var e = perfil.ejes[k];
+      H.push('<td width="25%" align="center" style="background:' + CO.crema + ';border-radius:10px;padding:16px 4px 13px">' +
+        '<div style="font-size:30px;font-weight:700;color:' + CO.acento + ';font-family:Georgia,serif;line-height:1">' + e.letra + '</div>' +
+        '<div style="margin-top:7px;font-size:11.5px;line-height:1.35;color:' + CO.tinta + '">' + esc(TX(e.etiqueta)) + '</div></td>');
     });
-    H.push(filaCorreo(T('inf.hidrat'), esc(TX(perfil.hidratacion.etiqueta))));
-    H.push('</table>');
+    H.push('</tr></table>' +
+      '<p style="margin:10px 6px 0;font-size:11.5px;color:' + CO.suave + '">' + T('correo.tipo') + ' · <b style="color:' +
+      CO.tinta + ';letter-spacing:2px">' + perfil.codigo + '</b></p></td></tr>');
+
+    /* Medición óptica */
+    H.push(tituloCorreo(T('inf.s1'), T('correo.medido')));
+    H.push('<tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">');
+    res.metricas.forEach(function (m) {
+      var col = CO[m.banda.clave] || CO.mid;
+      H.push('<tr><td style="padding:11px 0 12px;border-bottom:1px solid ' + CO.linea + '">' +
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
+        '<td style="font-size:14px;font-weight:600;color:' + CO.tinta + '">' + esc(TX(m.nombre)) + '</td>' +
+        '<td align="right" style="font-size:11px;font-weight:600;color:' + col + ';white-space:nowrap">' +
+        esc(TX(m.banda.etiqueta)) + '</td></tr></table>' +
+        '<div style="padding:7px 0 5px">' + barraCorreo(m.indice, col) + '</div>' +
+        '<div style="font-size:11.5px;color:' + CO.suave + ';font-family:Menlo,Consolas,monospace">' + esc(TX(m.fisico)) + '</div>' +
+        '</td></tr>');
+    });
+    H.push('</table></td></tr>');
+
+    /* Lo que la cámara no mide: se declara como tal */
+    H.push(tituloCorreo(T('inf.s3'), T('correo.declarado')));
+    H.push('<tr><td style="background:' + CO.crema + ';border-radius:10px;padding:16px 18px">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">');
+    var filas = [[T('inf.hidrat'), TX(perfil.hidratacion.etiqueta)]];
+    ['DO', 'SR', 'PN', 'WT'].forEach(function (k) {
+      var d = perfil.definiciones[k];
+      filas.push([TX(d.neg) + ' · ' + TX(d.pos), TX(perfil.ejes[k].etiqueta)]);
+    });
+    filas.forEach(function (f, i) {
+      H.push('<tr><td style="padding:7px 0;font-size:13px;color:' + CO.suave + (i ? '' : ';font-weight:600') + '">' + esc(f[0]) + '</td>' +
+        '<td align="right" style="padding:7px 0;font-size:13px;font-weight:600;color:' + CO.tinta + '">' + esc(f[1]) + '</td></tr>');
+    });
+    H.push('</table></td></tr>');
 
     /* Rutina Lococo */
     if (rut && rut.pasos.length) {
-      H.push('<h2 style="margin:0 0 8px;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;' +
-        'color:#1F6F63">' + T('inf.sProd') + '</h2>');
-      H.push('<table style="width:100%;border-collapse:collapse;margin-bottom:22px">');
-      rut.pasos.forEach(function (paso) {
-        H.push(filaCorreo(
-          '<span style="color:#7A857F;font-size:11px">' + esc(TX(paso.ranura)) + '</span><br>' +
-          '<b>' + esc(paso.producto.b) + '</b> ' + esc(paso.producto.n),
-          paso.producto.p + ' €'));
+      H.push(tituloCorreo(T('inf.sProd'), T('correo.pasos')));
+      rut.pasos.forEach(function (paso, i) {
+        H.push('<tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" ' +
+          'style="border:1px solid ' + CO.linea + ';border-radius:10px;border-collapse:separate"><tr>' +
+          '<td width="46" align="center" valign="top" style="padding:16px 0 0 14px">' +
+          '<div style="width:30px;height:30px;line-height:30px;border-radius:15px;background:' + CO.acento +
+          ';color:#FFFFFF;font-size:14px;font-weight:700;text-align:center">' + (i + 1) + '</div></td>' +
+          '<td style="padding:14px 16px 14px 12px">' +
+          '<div style="font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:' + CO.suave + '">' + esc(TX(paso.ranura)) + '</div>' +
+          '<div style="margin-top:3px;font-size:15px;line-height:1.35;color:' + CO.tinta + '"><b>' + esc(paso.producto.b) + '</b> ' +
+          esc(paso.producto.n) + '</div>' +
+          (paso.cubre ? '<div style="margin-top:5px;font-size:12px;color:' + CO.acento + '">' + T('inf.cubre') + ' · ' + esc(TX(paso.cubre)) + '</div>' : '') +
+          '</td><td align="right" valign="top" style="padding:16px 16px 0 0;font-size:14px;font-weight:600;color:' + CO.tinta +
+          ';white-space:nowrap">' + esc(paso.producto.p) + ' €</td></tr></table></td></tr>');
       });
-      H.push('</table>');
     }
 
-    /* Activos */
-    H.push('<h2 style="margin:0 0 8px;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;' +
-      'color:#1F6F63">' + T('inf.s4') + '</h2>');
-    H.push('<table style="width:100%;border-collapse:collapse;margin-bottom:22px">');
+    /* Activos, como etiquetas */
+    H.push(tituloCorreo(T('inf.s4'), ''));
+    H.push('<tr><td style="line-height:2.3">');
     rec.activos.slice(0, 8).forEach(function (a) {
-      H.push(filaCorreo(esc(TX(a.n)), esc(TX(a.c))));
+      H.push('<span style="display:inline-block;margin:0 6px 6px 0;padding:5px 12px;border-radius:14px;background:' +
+        CO.crema + ';border:1px solid ' + CO.linea + ';font-size:12.5px;line-height:1.4;color:' + CO.tinta + '">' + esc(TX(a.n)) + '</span>');
     });
-    H.push('</table>');
+    H.push('</td></tr>');
 
-    H.push('<p style="margin:0;padding:14px;background:#F6F8F4;border-left:3px solid #C9A227;' +
-      'font-size:12px;line-height:1.65;color:#5A6560">' + T('legal') + '</p>');
-    H.push('</div></div>');
+    /* Pie */
+    H.push('<tr><td style="padding:26px 0 0"><p style="margin:0;padding:14px 16px;background:' + CO.crema +
+      ';border-radius:10px;font-size:11.5px;line-height:1.65;color:' + CO.suave + '">' + T('legal') + '</p>' +
+      '<p style="margin:14px 0 0;font-size:11px;line-height:1.6;color:' + CO.suave + '">' + T('correo.privacidad') + '</p>' +
+      '</td></tr>');
+
+    H.push('</table></td></tr></table>' +
+      '<p style="margin:16px 0 0;text-align:center;font-size:10.5px;letter-spacing:1.5px;color:' + CO.suave + '">' +
+      'LOCOCO × OKI DOKI LABS · MADRID 2026</p></div>');
     return H.join('');
   }
 

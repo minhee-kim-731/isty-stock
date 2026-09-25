@@ -663,7 +663,9 @@
             ' b*' + seg.prototipo[1].toFixed(1),
         en: (seg.n / 1000).toFixed(1) + ' k valid px · ' + (cobertura * 100).toFixed(1) +
             ' % of frame · prototype a*' + seg.prototipo[0].toFixed(1) +
-            ' b*' + seg.prototipo[1].toFixed(1) });
+            ' b*' + seg.prototipo[1].toFixed(1) ,
+        ko: '유효 픽셀 ' + (seg.n / 1000).toFixed(1) + 'k · 화면의 ' + (cobertura * 100).toFixed(1) +
+            ' % · 피부 기준색 a*' + seg.prototipo[0].toFixed(1) + ' b*' + seg.prototipo[1].toFixed(1) });
 
     // 3 · Especular
     var esp = separarEspecular(img, w, h, seg.mascara);
@@ -671,7 +673,9 @@
       { es: 'Modelo dicromático · línea base difusa en ' + esp.base.toFixed(0) +
             '/255 · rango especular ' + esp.rango.toFixed(0),
         en: 'Dichromatic model · diffuse baseline at ' + esp.base.toFixed(0) +
-            '/255 · specular range ' + esp.rango.toFixed(0) });
+            '/255 · specular range ' + esp.rango.toFixed(0),
+        ko: '이색성 반사 모델 · 확산 기준선 ' + esp.base.toFixed(0) +
+            '/255 · 정반사 범위 ' + esp.rango.toFixed(0) });
 
     // 4 · Eritema y melanina
     var mapaEI = new Float32Array(n), mapaMI = new Float32Array(n);
@@ -684,7 +688,8 @@
     }
     paso({ es: 'Mapa de eritema', en: 'Erythema map', ko: "홍반 맵" },
       { es: 'Índice hemoglobínico 100·log₁₀(R/G) sobre reflectancia linealizada',
-        en: 'Haemoglobin index 100·log₁₀(R/G) over linearised reflectance' });
+        en: 'Haemoglobin index 100·log₁₀(R/G) over linearised reflectance',
+        ko: '선형화 반사율 위 헤모글로빈 지수 100·log₁₀(R/G)' });
 
     // 5 · Textura
     var mapaTex = bandaTextura(lab, w, h, seg.mascara);
@@ -692,7 +697,9 @@
       { es: 'Paso-banda r1–r4 sobre L* · escala ' + MM_PER_PX.toFixed(3) +
             ' mm/px · ventana 0,26–2,08 mm',
         en: 'Band-pass r1–r4 over L* · scale ' + MM_PER_PX.toFixed(3) +
-            ' mm/px · window 0.26–2.08 mm' });
+            ' mm/px · window 0.26–2.08 mm',
+        ko: 'L* 대역통과 r1–r4 · 축척 ' + MM_PER_PX.toFixed(3) +
+            ' mm/px · 창 0.26–2.08 mm' });
 
     // 6 · Imperfecciones
     var imp = detectarImperfecciones(mapaEI, w, h, seg.mascara, esp.mapa);
@@ -700,7 +707,9 @@
       { es: imp.lesiones.length + ' focos entre 0,45 y 12 mm² · z > ' + imp.umbral.toFixed(1) +
             ' sobre ruido local · zonas especulares excluidas',
         en: imp.lesiones.length + ' foci between 0.45 and 12 mm² · z > ' + imp.umbral.toFixed(1) +
-            ' over local noise · specular areas excluded' });
+            ' over local noise · specular areas excluded',
+        ko: '0.45~12 mm² 병변 ' + imp.lesiones.length + '개 · 국소 노이즈 대비 z > ' + imp.umbral.toFixed(1) +
+            ' · 정반사 영역 제외' });
 
     // 7 · Consolidación por zonas
     var buf = new Float32Array(n);
@@ -760,7 +769,8 @@
     var validas = resultadoZonas.filter(function (z) { return z.valido; });
     paso({ es: 'Consolidación por zonas', en: 'Zone consolidation', ko: "부위별 집계" },
       { es: validas.length + '/' + ZONES.length + ' zonas con muestra suficiente',
-        en: validas.length + '/' + ZONES.length + ' zones with sufficient sample' });
+        en: validas.length + '/' + ZONES.length + ' zones with sufficient sample',
+        ko: '표본 충분 부위 ' + validas.length + '/' + ZONES.length });
 
     /* ------------------------------------------------ MÉTRICAS GLOBALES */
     function prom(campo, grupo) {
@@ -810,7 +820,8 @@
         valor: brilloT * 100,
         indice: escalar(brilloT, BANDAS.brillo[0], BANDAS.brillo[1]),
         fisico: { es: (brilloT * 100).toFixed(1) + ' % · U ' + (brilloU * 100).toFixed(1) + ' %',
-                  en: (brilloT * 100).toFixed(1) + ' % · U ' + (brilloU * 100).toFixed(1) + ' %' },
+                  en: (brilloT * 100).toFixed(1) + ' % · U ' + (brilloU * 100).toFixed(1) + ' %',
+                  ko: 'T존 ' + (brilloT * 100).toFixed(1) + ' % · U존 ' + (brilloU * 100).toFixed(1) + ' %' },
         desc: { es: 'Fracción de superficie con reflexión especular por encima de la línea base difusa.',
                 en: 'Fraction of the surface with specular reflection above the diffuse baseline.', ko: "확산 반사 기준선을 넘는 정반사가 나타나는 표면 비율." }
       },
@@ -820,7 +831,8 @@
         valor: eiGlobal,
         indice: escalar(eiGlobal, BANDAS.eritema[0], BANDAS.eritema[1]),
         fisico: { es: eiGlobal.toFixed(1) + ' UI · a* ' + prom('a').toFixed(1),
-                  en: eiGlobal.toFixed(1) + ' units · a* ' + prom('a').toFixed(1) },
+                  en: eiGlobal.toFixed(1) + ' units · a* ' + prom('a').toFixed(1),
+                  ko: eiGlobal.toFixed(1) + ' UI · a* ' + prom('a').toFixed(1) },
         desc: { es: 'Concentración relativa de hemoglobina superficial por absorción diferencial R/G.',
                 en: 'Relative superficial haemoglobin concentration from differential R/G absorption.', ko: "R/G 차등 흡수로 산출한 표층 헤모글로빈 상대 농도." }
       },
@@ -830,7 +842,8 @@
         valor: texGlobal,
         indice: escalar(texGlobal, BANDAS.textura[0], BANDAS.textura[1]),
         fisico: { es: texGlobal.toFixed(2) + ' σL* @ 0,26–2,08 mm',
-                  en: texGlobal.toFixed(2) + ' σL* @ 0.26–2.08 mm' },
+                  en: texGlobal.toFixed(2) + ' σL* @ 0.26–2.08 mm',
+                  ko: texGlobal.toFixed(2) + ' σL* @ 0.26–2.08 mm' },
         desc: { es: 'Amplitud del relieve en la banda espacial del poro y el microrrelieve.',
                 en: 'Relief amplitude in the spatial band of pores and microrelief.', ko: "모공과 미세 요철에 해당하는 공간 대역의 굴곡 진폭." }
       },
@@ -840,7 +853,8 @@
         valor: totalLesiones,
         indice: escalar(totalLesiones, BANDAS.imperfecciones[0], BANDAS.imperfecciones[1]),
         fisico: { es: totalLesiones + ' focos · ' + areaLes + ' mm²',
-                  en: totalLesiones + ' foci · ' + areaLes + ' mm²' },
+                  en: totalLesiones + ' foci · ' + areaLes + ' mm²',
+                  ko: '병변 ' + totalLesiones + '개 · ' + areaLes + ' mm²' },
         desc: { es: 'Lesiones eritematosas focales de 0,3 a 12 mm² sobre el fondo de rubor difuso.',
                 en: 'Focal erythematous lesions of 0.3 to 12 mm² above the diffuse flush background.', ko: "확산성 붉은기 위에 나타나는 0.3~12 mm² 크기의 국소 홍반 병변." }
       },
@@ -850,7 +864,8 @@
         valor: itaSd,
         indice: escalar(itaSd, BANDAS.uniformidad[0], BANDAS.uniformidad[1]),
         fisico: { es: '±' + itaSd.toFixed(1) + '° entre ' + validas.length + ' zonas',
-                  en: '±' + itaSd.toFixed(1) + '° across ' + validas.length + ' zones' },
+                  en: '±' + itaSd.toFixed(1) + '° across ' + validas.length + ' zones',
+                  ko: validas.length + '개 부위 간 ±' + itaSd.toFixed(1) + '°' },
         desc: { es: 'Dispersión del ángulo tipológico entre zonas; sigue la irregularidad pigmentaria.',
                 en: 'Spread of the typology angle across zones; tracks pigmentary irregularity.', ko: "부위 간 유형각의 산포도 — 색소 불균일을 반영합니다." }
       }
@@ -868,13 +883,15 @@
     if (cobertura < 0.30) {
       confianza -= 20;
       notas.push({ es: 'Cobertura de piel baja (' + (cobertura * 100).toFixed(0) + ' %)',
-                   en: 'Low skin coverage (' + (cobertura * 100).toFixed(0) + ' %)' });
+                   en: 'Low skin coverage (' + (cobertura * 100).toFixed(0) + ' %)',
+                   ko: '피부 영역이 적음 (' + (cobertura * 100).toFixed(0) + ' %)' });
     }
     if (validas.length < ZONES.length) {
       var faltan = ZONES.length - validas.length;
       confianza -= faltan * 7;
       notas.push({ es: faltan + ' zona(s) sin muestra suficiente',
-                   en: faltan + ' zone(s) without sufficient sample' });
+                   en: faltan + ' zone(s) without sufficient sample',
+                   ko: '표본이 부족한 부위 ' + faltan + '곳' });
     }
     confianza = Math.max(35, Math.round(confianza));
 
