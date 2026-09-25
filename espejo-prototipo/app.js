@@ -178,6 +178,14 @@
       err.hidden = false;
       campo.setAttribute('aria-invalid', 'true');
     }
+    /* Atajo de pruebas para el equipo: con «test» o «prueba» en el campo de
+       correo se salta la cámara y el cuestionario y se abre un informe de
+       ejemplo sobre un rostro sintético. No guarda nada ni envía nada. */
+    if (/^(test|prueba)$/i.test(email)) {
+      campo.value = '';
+      window.ESPEJO_DEMO();
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return fallo('cor.errFormato');
     /* Con envío activo el correo es necesario para prestar el servicio que la
        persona ha pedido, y por eso puede exigirse. La casilla de marketing
