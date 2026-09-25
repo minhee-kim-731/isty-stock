@@ -18,7 +18,7 @@
      D/O  seca ↔ grasa            S/R  sensible ↔ resistente
      P/N  pigmentada ↔ no pigm.   W/T  con arrugas ↔ tersa                  */
 
-  var PREGUNTAS = [
+  var TODAS = [
     { eje: 'DO',
       texto: { es: 'Al lavarte la cara con agua y sin aplicar nada después, ¿cómo la notas a los 20 minutos?',
                en: 'After washing your face with water and applying nothing, how does it feel 20 minutes later?', ko: "물로만 세안하고 아무것도 바르지 않았을 때, 20분 뒤 피부가 어떤가요?" },
@@ -130,7 +130,7 @@
         { t: { es: 'Sí, varias y marcadas', en: 'Yes, several and pronounced', ko: "네, 여러 개가 뚜렷합니다" }, v: -2 },
         { t: { es: 'Alguna línea fina', en: 'A fine line or two', ko: "가는 선이 한두 개" }, v: -1 },
         { t: { es: 'Sólo al gesticular', en: 'Only when I make expressions', ko: "표정을 지을 때만" }, v: 1 },
-        { t: { es: 'Ninguna', en: 'None' }, v: 2 }
+        { t: { es: 'Ninguna', en: 'None', ko: "없음" }, v: 2 }
       ] },
     { eje: 'WT',
       texto: { es: '¿Cuántos años acumulas de exposición solar regular sin protección diaria?',
@@ -163,10 +163,19 @@
       ops: [
         { t: { es: 'Constantemente', en: 'Constantly', ko: "늘 그렇습니다" }, v: -2 },
         { t: { es: 'En invierno o con aire acondicionado', en: 'In winter or with air conditioning', ko: "겨울이나 에어컨 환경에서" }, v: -1 },
-        { t: { es: 'Rara vez', en: 'Rarely' }, v: 1 },
-        { t: { es: 'Nunca', en: 'Never' }, v: 2 }
+        { t: { es: 'Rara vez', en: 'Rarely', ko: "드물게" }, v: 1 },
+        { t: { es: 'Nunca', en: 'Never', ko: "전혀 없음" }, v: 2 }
       ] }
   ];
+
+  /* En el puesto se usan cinco: una por eje de Baumann más la de hidratación.
+     Las demás preguntaban por lo que la cámara ya mide (brillo, rojez,
+     manchas) y alargaban la cola sin cambiar el tipo. Se conservan aquí para
+     poder volver al cuestionario completo cambiando sólo esta lista.
+     La de hidratación NO se quita: la cámara no puede medirla. */
+  var ACTIVAS = [0, 3, 7, 9, 12];
+  var PREGUNTAS = ACTIVAS.map(function (i) { return TODAS[i]; });
+
 
   var EJES = {
     DO: { neg: { es: 'Seca', en: 'Dry', ko: "건성" }, pos: { es: 'Grasa', en: 'Oily', ko: "지성" },

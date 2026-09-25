@@ -319,7 +319,7 @@
        desplazamiento real de la cara (que sólo cambia los bordes) apenas la
        movía. Promediar el bloque cancela el ruido (√64 = 8 veces menos) y el
        percentil 95 recoge los bordes, que es donde se ve el movimiento. */
-    var BW = W >> 3, BH = H >> 3, bloques = new Float32Array(BW * BH), bx, by;
+    var BW = W >> 3, BH = H >> 3, bloques = new Float32Array(BW * BH);
     for (y = 0; y < BH * 8; y++) for (x = 0; x < BW * 8; x++) bloques[(y >> 3) * BW + (x >> 3)] += gris[y * W + x];
     for (k = 0; k < bloques.length; k++) bloques[k] /= 64;
     var movimiento = 1;
@@ -893,7 +893,10 @@
       wb: wb,
       confianza: confianza, notasConfianza: notas,
       lesiones: imp.lesiones,
-      util: util
+      util: util,
+      /* Sólo para la vista ampliada del informe. Viven en memoria como el
+         resto del resultado y se descartan al cerrar la sesión. */
+      mapas: { textura: mapaTex, mascara: seg.mascara, especular: esp.mapa }
     };
   }
 

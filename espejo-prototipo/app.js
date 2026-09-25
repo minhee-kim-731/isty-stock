@@ -656,6 +656,111 @@
     return [x / poly.length, y / poly.length];
   }
 
+  /* ------------------------------------------------------- LUPA
+     Vista ampliada de tres zonas sobre la MISMA foto que se ha medido: no hay
+     segunda captura ni imagen inventada. Se recorta la zona útil (0,26 mm/px),
+     se amplía y se marca encima lo que el motor ya ha calculado:
+       · puntos de poro: mínimos locales de la banda de textura r1–r4 (la
+         misma que da el índice de textura) por debajo de −1,8 σ de la zona.
+         Son candidatos ópticos, no un recuento clínico de poros. Se descartan
+         en brillo especular y a su alrededor: el borde de un reflejo es un
+         escalón de luminancia que la banda confunde con un hueco.
+       · focos: las lesiones que ya detecta el paso 5, a su tamaño real.     */
+  var LUPA_ZONAS = ['nariz', 'mejillaD', 'frente'];
+  var LUPA_PX = 96;                                       // lado del recorte
+  var LUPA_ZOOM = 3;
+  var LUPA_MM = Math.round(LUPA_PX * E.MM_PER_PX);        // ≈ 25 mm
+
+  function puntosPoro(res, x0, y0, lado) {
+    var u = res.util, m = res.mapas, W = u.w, H = u.h, esp = m.especular;
+    function brilla(i) {
+      for (var dy = -3; dy <= 3; dy++) for (var dx = -3; dx <= 3; dx++) {
+        var j = i + dy * W + dx; if (j >= 0 && j < esp.length && esp[j] > 0.42) return true;
+      }
+      return false;
+    }
+    var x1 = Math.min(W - 1, x0 + lado), y1 = Math.min(H - 1, y0 + lado);
+    var s = 0, s2 = 0, n = 0, x, y, i;
+    for (y = y0; y < y1; y++) for (x = x0; x < x1; x++) {
+      i = y * W + x; if (!m.mascara[i]) continue;
+      s += m.textura[i]; s2 += m.textura[i] * m.textura[i]; n++;
+    }
+    if (n < 200) return { puntos: [], area: n };
+    var med = s / n, sd = Math.sqrt(Math.max(1e-6, s2 / n - med * med)), umbral = med - 1.8 * sd;
+    var puntos = [];
+    for (y = Math.max(1, y0); y < y1 - 1; y++) for (x = Math.max(1, x0); x < x1 - 1; x++) {
+      i = y * W + x;
+      if (!m.mascara[i]) continue;
+      var v = m.textura[i];
+      if (v >= umbral || brilla(i)) continue;
+      if (v > m.textura[i - 1] || v > m.textura[i + 1] || v > m.textura[i - W] || v > m.textura[i + W] ||
+          v > m.textura[i - W - 1] || v > m.textura[i - W + 1] || v > m.textura[i + W - 1] || v > m.textura[i + W + 1]) continue;
+      puntos.push({ x: x - x0, y: y - y0, p: Math.min(1, (umbral - v) / sd) });
+    }
+    return { puntos: puntos, area: n };
+  }
+
+  function pintarLupas(res) {
+    if (!res.mapas || !res.util) return;
+    var u = res.util, dpr = Math.min(2, window.devicePixelRatio || 1);
+    Array.prototype.forEach.call(document.querySelectorAll('#informe .lupa'), function (fig) {
+      var id = fig.getAttribute('data-zona');
+      var Z = E.ZONES.filter(function (q) { return q.id === id; })[0];
+      var z = res.zonas.filter(function (q) { return q.id === id; })[0];
+      var c = centroide(Z.poly);
+      var x0 = Math.max(0, Math.min(u.w - LUPA_PX, Math.round(c[0] * u.w - LUPA_PX / 2)));
+      var y0 = Math.max(0, Math.min(u.h - LUPA_PX, Math.round(c[1] * u.h - LUPA_PX / 2)));
+      var lado = LUPA_PX * LUPA_ZOOM, k = LUPA_ZOOM * dpr;
+
+      var cv = fig.querySelector('canvas');
+      cv.width = lado * dpr; cv.height = lado * dpr;
+      var ctx = cv.getContext('2d');
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(u.canvas, x0, y0, LUPA_PX, LUPA_PX, 0, 0, cv.width, cv.height);
+
+      // Fuera de la máscara de piel (ojo, pelo, fondo) se apaga: ahí no se mide.
+      var m = res.mapas.mascara;
+      ctx.fillStyle = 'rgba(4,8,12,.62)';
+      for (var yy = 0; yy < LUPA_PX; yy++) for (var xx = 0; xx < LUPA_PX; xx++) {
+        if (!m[(y0 + yy) * u.w + x0 + xx]) ctx.fillRect(xx * k, yy * k, k + 0.5, k + 0.5);
+      }
+
+      var pp = puntosPoro(res, x0, y0, LUPA_PX);
+
+      var focos = res.lesiones.filter(function (l) {
+        var lx = l.x * u.w - x0, ly = l.y * u.h - y0;
+        return lx >= 0 && ly >= 0 && lx < LUPA_PX && ly < LUPA_PX;
+      });
+      // Dentro de un foco el hueco es la lesión, no un poro.
+      pp.puntos = pp.puntos.filter(function (q) {
+        return !focos.some(function (l) {
+          var r = Math.sqrt(l.areaMm2 / Math.PI) / E.MM_PER_PX + 1.5;
+          var dx = q.x - (l.x * u.w - x0), dy = q.y - (l.y * u.h - y0);
+          return dx * dx + dy * dy < r * r;
+        });
+      });
+      ctx.lineWidth = 1.1 * dpr;
+      pp.puntos.forEach(function (q) {
+        ctx.strokeStyle = 'rgba(53,214,245,' + (0.45 + 0.5 * q.p).toFixed(2) + ')';
+        ctx.beginPath(); ctx.arc((q.x + 0.5) * k, (q.y + 0.5) * k, (1.6 + q.p) * dpr * 1.4, 0, 6.2832); ctx.stroke();
+      });
+      ctx.strokeStyle = '#FF5C55'; ctx.lineWidth = 1.6 * dpr;
+      focos.forEach(function (l) {
+        var r = Math.sqrt(l.areaMm2 / Math.PI) / E.MM_PER_PX;
+        ctx.beginPath(); ctx.arc((l.x * u.w - x0) * k, (l.y * u.h - y0) * k, r * k + 4 * dpr, 0, 6.2832); ctx.stroke();
+      });
+
+      // En porcentaje del lado: el lienzo se escala con la tarjeta.
+      fig.querySelector('.lupa-esc i').style.width = (5 / E.MM_PER_PX / LUPA_PX * 100).toFixed(2) + '%';
+      var cm2 = pp.area * E.MM_PER_PX * E.MM_PER_PX / 100;
+      var dens = cm2 > 0 ? pp.puntos.length / cm2 : 0;
+      fig.querySelector('.lupa-datos').innerHTML =
+        '<span><b>' + pp.puntos.length + '</b> ' + T('lupa.poros') + ' · ' + nf(dens, 0) + '/cm²</span>' +
+        '<span><b>' + focos.length + '</b> ' + T('lupa.focos') + '</span>' +
+        '<span>' + T('mapa.textura') + ' <b>' + nf(z.textura, 2) + '</b> σL*</span>';
+    });
+  }
+
   function svgMapa(clave, res) {
     var M = MAPAS[clave], R = RAMPAS[clave];
     var W = 240, H = Math.round(240 * E.RETICLE.h / E.RETICLE.w);
@@ -788,8 +893,24 @@
     }
     H.push('</div></div>');
 
-    /* --- 03 Perfil por cuestionario --------------------------------- */
-    H.push(sec('03', T('inf.s3'), T('inf.s3der')));
+    /* --- 03 Análisis ampliado --------------------------------------- */
+    H.push(sec('03', T('lupa.titulo'), '×' + LUPA_ZOOM + ' · ' + LUPA_MM + ' mm'));
+    H.push('<div class="lupa-grid">');
+    LUPA_ZONAS.forEach(function (id) {
+      var z = res.zonas.filter(function (q) { return q.id === id; })[0];
+      if (!z || !z.valido) return;
+      H.push('<figure class="lupa" data-zona="' + id + '">' +
+        '<div class="lupa-vis"><canvas class="lupa-cv"></canvas><span class="lupa-barrido"></span>' +
+        '<span class="lupa-esc"><i></i>5 mm</span>' +
+        '<span class="lupa-tag">' + esc(TX(z.nombre)) + '</span></div>' +
+        '<figcaption class="lupa-datos"></figcaption></figure>');
+    });
+    H.push('</div><p class="lupa-ley"><span class="lp"></span>' + T('lupa.leyPoro') +
+      '<span class="ll"></span>' + T('lupa.leyFoco') + '</p>' +
+      '<p class="tiny" style="margin-top:10px">' + TF('lupa.nota', { m: mmpx }) + '</p></div>');
+
+    /* --- 04 Perfil por cuestionario --------------------------------- */
+    H.push(sec('04', T('inf.s3'), T('inf.s3der')));
     ['DO', 'SR', 'PN', 'WT'].forEach(function (k) {
       var d = perfil.definiciones[k], e = perfil.ejes[k];
       var pos = (e.norm + 1) / 2 * 100;
@@ -817,7 +938,7 @@
     H.push('</div>');
 
     /* --- 04 Activos ------------------------------------------------- */
-    H.push(sec('04', T('inf.s4'), T('inf.s4der')));
+    H.push(sec('05', T('inf.s4'), T('inf.s4der')));
     if (rec.razones.length) {
       H.push('<p class="small" style="margin-bottom:14px">' + T('inf.porQue') +
         rec.razones.map(function (r) { return esc(TX(r)); }).join(' ') + '</p>');
@@ -834,7 +955,7 @@
     var rut = null;
     if (CAT) {
       rut = CAT.rutina(perfil, res);
-      H.push(sec('05', T('inf.sProd'), T('inf.sProdDer')));
+      H.push(sec('06', T('inf.sProd'), T('inf.sProdDer')));
       H.push('<p class="small" style="margin-bottom:16px">' + T('inf.prodIntro') + '</p>');
 
       /* El motivo de cada prioridad se enuncia UNA vez. Repetir la misma
@@ -868,7 +989,7 @@
     }
 
     /* --- 06 Estructura de rutina ------------------------------------ */
-    H.push(sec('06', T('inf.s5'), T('inf.s5der')));
+    H.push(sec('07', T('inf.s5'), T('inf.s5der')));
     H.push('<div class="rut-grid"><div class="rut"><h4>' + T('inf.manana') + '</h4>');
     rec.manana.forEach(function (p2, i) {
       H.push('<div class="rut-paso"><span class="n">' + (i + 1) + '</span><div>' +
@@ -882,13 +1003,13 @@
     H.push('</div></div></div>');
 
     /* --- 06 Evitar -------------------------------------------------- */
-    H.push(sec('07', T('inf.s6'), ''));
+    H.push(sec('08', T('inf.s6'), ''));
     H.push('<ul class="evitar">');
     rec.evitar.forEach(function (e) { H.push('<li>' + esc(TX(e)) + '</li>'); });
     H.push('</ul></div>');
 
     /* --- 07 Método -------------------------------------------------- */
-    H.push(sec('08', T('inf.s7'), T('inf.s7der')));
+    H.push(sec('09', T('inf.s7'), T('inf.s7der')));
     var metodos = [
       [{ es: 'Brillo superficial', en: 'Surface shine', ko: "표면 유분" },
        { es: 'Modelo dicromático de reflexión (Shafer, 1985). La componente especular es acromática, ' +
@@ -1000,7 +1121,7 @@
     H.push('</div>');
 
     /* --- 08 Condiciones --------------------------------------------- */
-    H.push(sec('09', T('inf.s8'), T('inf.s8der')));
+    H.push(sec('10', T('inf.s8'), T('inf.s8der')));
     H.push('<div class="conf-grid"><div style="text-align:center">' +
       '<div class="conf-num">' + res.confianza + '</div>' +
       '<p class="eyebrow eyebrow--mudo" style="margin-top:5px">' + T('inf.confianza') + '</p></div><div>');
@@ -1048,6 +1169,8 @@
     $('informe').innerHTML = H.join('');
     irA(F_INFORME);
     if (conservarScroll) window.scrollTo(0, y);
+
+    pintarLupas(res);
 
     /* Interacciones del informe */
     var mapaActual = 'eritema';

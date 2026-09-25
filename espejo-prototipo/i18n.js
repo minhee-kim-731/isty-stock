@@ -265,10 +265,10 @@
     'cue.eyebrow': { es: 'Fase 04 · Cuestionario clínico', en: 'Step 04 · Clinical questionnaire', ko: "05단계 · 임상 문진" },
     'cue.h2':      { es: 'Lo que la cámara no ve', en: 'What the camera cannot see', ko: "카메라가 보지 못하는 것" },
     'cue.lede': {
-      es: 'Trece preguntas sobre comportamiento, tolerancia e historia. Responde pensando ' +
-          'en cómo está tu piel habitualmente, no hoy.',
-      en: 'Thirteen questions about behaviour, tolerance and history. Answer for how your ' +
-          'skin usually is, not how it is today.', ko: "행동·내성·병력에 관한 13개 문항입니다. 오늘이 아니라 평소 피부 상태를 기준으로 답해주세요." },
+      es: 'Cinco preguntas sobre lo que la cámara no puede ver: cómo se comporta tu piel, ' +
+          'cómo tolera y cómo se hidrata. Responde pensando en cómo está habitualmente, no hoy.',
+      en: 'Five questions about what the camera cannot see: how your skin behaves, how it ' +
+          'tolerates and how it holds water. Answer for how it usually is, not today.', ko: "카메라가 볼 수 없는 것에 관한 5개 문항입니다 — 피부의 반응, 내성, 수분. 오늘이 아니라 평소 피부 상태를 기준으로 답해주세요." },
     'cue.atras':   { es: 'Anterior', en: 'Back', ko: "이전" },
     'cue.num':     { es: 'Pregunta {i} de {n}', en: 'Question {i} of {n}',
       ko: "{n}문항 중 {i}번"
@@ -320,6 +320,19 @@
           'and that is the one to compare across sessions.', ko: "각 게이지 바깥의 눈금은 최적 / 중등도 / 상승 / 높음 구간을 나눕니다 (100 중 30, 55, 78). 지수는 이 장비의 운용 척도이고, 게이지 아래 단위가 붙은 수치가 실제로 측정된 물리량입니다. 세션 간 비교는 그 수치로 하세요." },
     'inf.indice': { es: 'ÍNDICE', en: 'INDEX', ko: "지수" },
 
+    'lupa.titulo':  { es: 'Análisis ampliado', en: 'Magnified analysis', ko: "확대 분석" },
+    'lupa.poros':   { es: 'puntos de poro', en: 'pore points', ko: "모공 검출점" },
+    'lupa.focos':   { es: 'focos', en: 'foci', ko: "국소 병변" },
+    'lupa.leyPoro': { es: 'Punto de poro (banda r1–r4)', en: 'Pore point (r1–r4 band)', ko: "모공 검출점 (결 대역 r1–r4)" },
+    'lupa.leyFoco': { es: 'Foco eritematoso', en: 'Erythematous focus', ko: "국소 홍반 병변" },
+    'lupa.nota': {
+      es: 'Ampliación digital de la misma foto que se ha medido ({m} mm/px); no hay una segunda captura. ' +
+          'Los puntos de poro son mínimos locales de la banda de textura: un indicador óptico de relieve, ' +
+          'no un recuento clínico de poros. Las zonas apagadas quedan fuera de la medición.',
+      en: 'Digital magnification of the same photo that was measured ({m} mm/px); there is no second capture. ' +
+          'Pore points are local minima of the texture band: an optical relief indicator, not a clinical ' +
+          'pore count. Dimmed areas are outside the measurement.',
+      ko: "측정에 쓴 바로 그 사진을 디지털로 확대한 것입니다({m} mm/px). 따로 한 장 더 찍지 않습니다. 모공 검출점은 결 대역의 국소 최저점으로, 요철을 보여주는 광학 지표이며 임상적인 모공 개수가 아닙니다. 어둡게 처리된 곳은 측정에서 제외된 부분입니다." },
     'inf.s2':    { es: 'Distribución por zona', en: 'Distribution by zone', ko: "부위별 분포" },
     'inf.zona':  { es: 'Zona', en: 'Zone', ko: "부위" },
     'inf.focos': { es: 'Focos', en: 'Foci', ko: "병변" },
