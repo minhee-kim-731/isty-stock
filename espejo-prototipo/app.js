@@ -183,9 +183,8 @@
     if (S.puedeEnviar && !$('cor-consent-salud').checked) {
       err.textContent = T('cor.errSalud'); err.hidden = false; return;
     }
-    if (!S.puedeEnviar && !consiente) {
-      err.textContent = T('cor.errConsent'); err.hidden = false; return;
-    }
+    /* La casilla de marketing nunca bloquea: sin ella el correo simplemente
+       no se guarda para novedades y el análisis sigue igual. */
     S.correo = email;
     S.consintioSalud = S.puedeEnviar && $('cor-consent-salud').checked;
 

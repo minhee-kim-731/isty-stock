@@ -147,8 +147,7 @@
           'It is optional: you can skip this step and the analysis works just the same.', ko: "Lococo의 신제품과 혜택 소식을 받고 싶으시면 이메일을 남겨주세요. 선택 사항이며, 건너뛰어도 분석은 동일하게 진행됩니다." },
     'cor.etiqueta': { es: 'Correo electrónico', en: 'Email address', ko: "이메일 주소" },
     'cor.consent': {
-      es: 'Acepto que Lococo guarde mi correo para enviarme novedades y ofertas. ' +
-          'Puedo darme de baja cuando quiera escribiendo a hola@lococo.beauty.',
+      es: '(Opcional) Acepto recibir comunicaciones comerciales de Lococo por correo electrónico: novedades, lanzamientos y ofertas. Puedo darme de baja cuando quiera escribiendo a hola@lococo.beauty.',
       en: 'I agree that Lococo may store my email to send me news and offers. ' +
           'I can unsubscribe at any time by writing to hola@lococo.beauty.', ko: "Lococo가 신제품·혜택 안내를 위해 제 이메일을 저장하는 데 동의합니다. hola@lococo.beauty 로 언제든 수신을 해지할 수 있습니다." },
     'cor.continuar': { es: 'Continuar', en: 'Continue', ko: "계속" },
@@ -160,8 +159,8 @@
           'and the date. Nothing else.<br><b>The images and the analysis results are NOT stored</b> ' +
           'anywhere: they are processed on this tablet and destroyed when the session ends. Your ' +
           'email is never linked to your skin.', ko: "<b>이메일</b>은 유럽 소재 Cloudflare 서버에 언어·날짜와 함께 저장됩니다. 그 외에는 없습니다.<br><b>이미지와 분석 결과는 어디에도 저장되지 않습니다</b> — 이 태블릿에서 처리되고 세션 종료 시 파기됩니다. 이메일이 당신의 피부와 연결되는 일은 없습니다." },
-    'cor.h2Envio': { es: "Te enviamos tu informe", en: "We’ll send you your report", ko: "검사 결과지를 보내드릴게요" },
-    'cor.ledeEnvio': { es: "Necesitamos tu correo para enviarte el informe del análisis en cuanto esté listo. Es el único uso obligatorio: lo demás es opcional.", en: "We need your email to send you the analysis report as soon as it is ready. That is the only required use: everything else is optional.", ko: "분석이 끝나는 대로 결과지를 보내드리려면 이메일이 필요합니다. 필수로 쓰이는 건 이것뿐이고, 나머지는 선택입니다." },
+    'cor.h2Envio': { es: 'Déjanos el correo donde quieres recibir tu informe', en: "We’ll send you your report", ko: "검사 결과지를 보내드릴게요" },
+    'cor.ledeEnvio': { es: 'Te lo enviamos en cuanto termine el análisis. La casilla de novedades es opcional: puedes continuar sin marcarla.', en: "We need your email to send you the analysis report as soon as it is ready. That is the only required use: everything else is optional.", ko: "분석이 끝나는 대로 결과지를 보내드리려면 이메일이 필요합니다. 필수로 쓰이는 건 이것뿐이고, 나머지는 선택입니다." },
     'cor.consentSalud': { es: "Acepto que Lococo me envíe por correo el informe de este análisis. El informe incluye datos sobre el estado de mi piel; se envía una sola vez y no se guarda copia.", en: "I agree that Lococo may email me the report of this analysis. The report contains data about the condition of my skin; it is sent once and no copy is kept.", ko: "Lococo가 이 분석의 결과지를 이메일로 보내는 데 동의합니다. 결과지에는 제 피부 상태에 관한 정보가 포함되며, 한 번만 발송되고 사본은 보관되지 않습니다." },
     'cor.datosEnvio': { es: "<b>Tu correo</b> se guarda en un servidor de Cloudflare en Europa, junto con el idioma y la fecha.<br><b>El informe</b> se envía a tu correo y no se guarda en ningún sitio: atraviesa el servidor y no deja copia. Las imágenes nunca salen de esta tableta.", en: "<b>Your email</b> is stored on a Cloudflare server in Europe, along with the language and the date.<br><b>The report</b> is sent to your inbox and stored nowhere: it passes through the server and leaves no copy. The images never leave this tablet.", ko: "<b>이메일</b>은 유럽 소재 Cloudflare 서버에 언어·날짜와 함께 저장됩니다.<br><b>결과지</b>는 메일로 발송되며 어디에도 저장되지 않습니다 — 서버를 지나가기만 하고 사본이 남지 않습니다. 이미지는 이 태블릿을 벗어나지 않습니다." },
     'cor.errSalud': { es: "Marca la casilla del informe para poder enviártelo.", en: "Tick the report box so we can send it to you.", ko: "결과지를 보내드리려면 해당 항목에 체크해주세요." },
