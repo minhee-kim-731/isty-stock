@@ -671,19 +671,15 @@
   var MOSTRAR_LUPA = false;
   var MOSTRAR_CUESTIONARIO = false;
 
-  /* Enlace al producto en la tienda. El catálogo no guarda la URL de cada
-     ficha, así que se enlaza a la búsqueda de la tienda con marca y nombre:
-     no se rompe si cambia el handle en Shopify. Las UTM permiten ver en
-     Shopify qué ventas vinieron del puesto. */
+  /* Enlace a la ficha del producto en la tienda (lococo.beauty, Shopify).
+     Sólo si el catálogo trae su handle (`h`): los que no se venden online
+     no llevan enlace. Las UTM permiten ver en Shopify qué ventas vinieron
+     del puesto y cuáles del correo. */
   var TIENDA = 'https://lococo.beauty';
   function urlProducto(pr, medio) {
-    // Sin volumen ni signos: «150ml» o «AHA + BHA» hacen fallar la búsqueda
-    // si la ficha los escribe de otra manera.
-    var q = (pr.b + ' ' + pr.n)
-      .replace(/\b\d+([.,]\d+)?\s?(ml|g|ea|pcs|pads?|sheets?)\b/gi, ' ')
-      .replace(/[:+&()\/,]/g, ' ').replace(/\s+/g, ' ').trim();
-    return TIENDA + '/search?type=product&q=' + encodeURIComponent(q) +
-      '&utm_source=espejo&utm_medium=' + medio + '&utm_campaign=madrid2026';
+    if (!pr || !pr.h) return null;
+    return TIENDA + '/products/' + encodeURIComponent(pr.h) +
+      '?utm_source=espejo&utm_medium=' + medio + '&utm_campaign=madrid2026';
   }
 
   var LUPA_ZONAS = ['nariz', 'mejillaD', 'frente'];
@@ -1062,8 +1058,10 @@
           '<div class="prod-metas">' +
           paso.metas.map(function (m) { return '<span class="prod-meta">' + esc(TX(m)) + '</span>'; }).join('') +
           '</div>' +
-          '<a class="prod-link" href="' + esc(urlProducto(paso.producto, 'pantalla')) +
-          '" target="_blank" rel="noopener">' + T('inf.verProducto') + ' →</a></div>' +
+          (urlProducto(paso.producto, 'pantalla')
+            ? '<a class="prod-link" href="' + esc(urlProducto(paso.producto, 'pantalla')) +
+              '" target="_blank" rel="noopener">' + T('inf.verProducto') + ' →</a>'
+            : '') + '</div>' +
           '<span class="prod-precio">' + esc(paso.producto.p) + ' €</span></div>');
       });
       H.push('<p class="tiny" style="margin-top:14px">' + T('inf.prodNota') + '</p></div>');
@@ -1396,8 +1394,10 @@
           '<div style="margin-top:4px;font-size:15px;line-height:1.4;color:' + CO.tinta + ls + '"><b>' + esc(paso.producto.b) + '</b><br>' +
           esc(paso.producto.n) + '</div>' +
           (paso.cubre ? '<div style="margin-top:6px;font-size:12px;color:' + CO.suave + ls + '">' + T('inf.cubre') + ' · ' + esc(TX(paso.cubre)) + '</div>' : '') +
-          '<a href="' + esc(urlProducto(paso.producto, 'email')) + '" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:700;color:' +
-          CO.azul + ';text-decoration:none' + ls + '">' + T('inf.verProducto') + ' →</a>' +
+          (urlProducto(paso.producto, 'email')
+            ? '<a href="' + esc(urlProducto(paso.producto, 'email')) + '" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:700;color:' +
+              CO.azul + ';text-decoration:none' + ls + '">' + T('inf.verProducto') + ' →</a>'
+            : '') +
           '</td><td align="right" valign="top" style="padding:18px 16px 0 0;font-size:15px;font-weight:800;color:' + CO.tinta +
           ';white-space:nowrap">' + esc(paso.producto.p) + ' €</td></tr></table></td></tr>');
       });

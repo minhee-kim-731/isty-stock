@@ -177,10 +177,10 @@ Lococo 요청으로 결과지와 메일에서 뺐다. `app.js` 의 `MOSTRAR_LUPA
 - 이미 커버된 목표는 다음 슬롯에서 가중치가 0.4배로 내려간다. 이게 없으면 지배적인 목표
   하나가 5단계를 전부 먹어서 같은 태그가 다섯 번 반복된다.
 - 재고가 바뀌면 `catalogo.js`의 `PRODUCTOS` 배열만 교체하면 된다.
-- 각 제품의 **"Ver producto"** 링크는 쇼핑몰 검색(`lococo.beauty/search?q=브랜드+이름`)으로 간다.
-  카탈로그에 상품 URL이 없어서다. 용량·기호는 검색어에서 뺀다. UTM(`utm_source=espejo`,
-  `utm_medium=pantalla|email`)이 붙어 Shopify에서 부스 유입 매출을 볼 수 있다.
-  상품 URL 목록을 받으면 `urlProducto()` 만 바꾸면 된다.
+- 각 제품의 **"Ver producto"** 링크는 쇼핑몰 상세페이지(`lococo.beauty/products/<handle>`)로 간다.
+  handle은 `catalogo.js` 의 `h` 필드. 2026-09-26 `products.json` 과 대조해서 **97개 중 32개**만 온라인에
+  있었고, 나머지는 링크를 숨긴다. 쇼핑몰에 상품이 추가되면 해당 줄에 `h:"handle"` 만 넣으면 된다.
+  UTM(`utm_source=espejo`, `utm_medium=pantalla|email`)이 붙어 Shopify에서 부스 유입 매출을 볼 수 있다.
 
 ## 계정 관련
 
