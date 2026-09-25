@@ -142,8 +142,11 @@
 
   function aplicarModoCorreo() {
     var env = S.puedeEnviar;
-    $('cor-h2').setAttribute('data-i18n', env ? 'cor.h2Envio' : 'cor.h2');
-    $('cor-lede').setAttribute('data-i18n', env ? 'cor.ledeEnvio' : 'cor.lede');
+    /* Lococo pide que el paso se presente siempre como el correo del informe
+       (2026-09-26), esté o no configurado el envío. Sin proveedor, el texto
+       de apoyo no promete plazo de entrega. */
+    $('cor-h2').setAttribute('data-i18n', 'cor.h2Envio');
+    $('cor-lede').setAttribute('data-i18n', env ? 'cor.ledeEnvio' : 'cor.ledeSinEnvio');
     $('cor-datos').setAttribute('data-i18n', env ? 'cor.datosEnvio' : 'cor.datos');
     $('cor-check-salud').hidden = !env;
     /* Sin envío, el correo solo sirve para marketing y tiene que poder
