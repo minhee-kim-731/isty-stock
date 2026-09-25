@@ -147,9 +147,9 @@
           'It is optional: you can skip this step and the analysis works just the same.', ko: "Lococo의 신제품과 혜택 소식을 받고 싶으시면 이메일을 남겨주세요. 선택 사항이며, 건너뛰어도 분석은 동일하게 진행됩니다." },
     'cor.etiqueta': { es: 'Correo electrónico', en: 'Email address', ko: "이메일 주소" },
     'cor.consent': {
-      es: '(Opcional) Acepto recibir comunicaciones comerciales de Lococo por correo electrónico: novedades, lanzamientos y ofertas. Puedo darme de baja cuando quiera escribiendo a hola@lococo.beauty.',
+      es: '(Opcional) Acepto recibir comunicaciones comerciales de Lococo por correo electrónico: novedades, lanzamientos y ofertas. Puedo darme de baja cuando quiera escribiendo a sales@lococo.beauty.',
       en: 'I agree that Lococo may store my email to send me news and offers. ' +
-          'I can unsubscribe at any time by writing to hola@lococo.beauty.', ko: "Lococo가 신제품·혜택 안내를 위해 제 이메일을 저장하는 데 동의합니다. hola@lococo.beauty 로 언제든 수신을 해지할 수 있습니다." },
+          'I can unsubscribe at any time by writing to sales@lococo.beauty.', ko: "Lococo가 신제품·혜택 안내를 위해 제 이메일을 저장하는 데 동의합니다. sales@lococo.beauty 로 언제든 수신을 해지할 수 있습니다." },
     'cor.continuar': { es: 'Continuar', en: 'Continue', ko: "계속" },
     'cor.saltar':    { es: 'Saltar este paso', en: 'Skip this step', ko: "이 단계 건너뛰기" },
     'cor.datosTitulo': { es: 'Qué guardamos', en: 'What is stored, and what is not', ko: "무엇이 저장되고 무엇이 저장되지 않는가" },

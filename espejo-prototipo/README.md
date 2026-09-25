@@ -121,9 +121,9 @@ npx wrangler d1 execute espejo-leads --remote \
   --command "SELECT email, idioma, creado FROM leads ORDER BY id DESC;"
 ```
 
-> ⚠️ **행사 전 반드시 확인**: 동의 문구에 수신거부 주소로 `hola@lococo.beauty` 가 적혀
-> 있다. 실제로 받는 주소인지 확인하고, 아니면 `i18n.js`의 `cor.consent` 3개 언어를
-> 모두 고칠 것. 수신거부 경로가 실제로 동작하지 않으면 GDPR 위반이다.
+> 동의 문구의 수신거부 주소는 `sales@lococo.beauty` (2026-09-26 민희님 확인).
+> 바꿀 때는 `i18n.js`의 `cor.consent` 3개 언어와 `index.html`의 기본 문구를 같이 고칠 것.
+> 수신거부 경로가 실제로 동작하지 않으면 GDPR 위반이다.
 
 ## 문진 — 5문항
 
