@@ -145,6 +145,10 @@
     $('cor-lede').setAttribute('data-i18n', env ? 'cor.ledeEnvio' : 'cor.lede');
     $('cor-datos').setAttribute('data-i18n', env ? 'cor.datosEnvio' : 'cor.datos');
     $('cor-check-salud').hidden = !env;
+    /* Sin envío, el correo solo sirve para marketing y tiene que poder
+       omitirse: exigirlo convertiría el análisis en un peaje por la publicidad.
+       Con envío, el correo es el servicio pedido y el botón sobra. */
+    $('btn-correo-saltar').hidden = env;
     I.aplicarEstaticos();
   }
 
