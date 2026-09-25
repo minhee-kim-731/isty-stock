@@ -1,0 +1,29 @@
+{
+  // ESPEJO · Cloudflare Worker.
+  //
+  // `main` existe para tres rutas: capacidad, alta de correo y envío del
+  // informe. Todo lo demás lo sirve el binding ASSETS desde dist/. El análisis
+  // ocurre entero en el navegador y ninguna imagen llega hasta aquí.
+  //
+  //   node build.mjs && npx wrangler deploy
+  //
+  "name": "lococo-skin-type-analysis",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-14",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      // Región weur: el puesto está en Madrid y los correos son de residentes
+      // en la UE. Mantener el dato en Europa evita una transferencia
+      // internacional que habría que justificar.
+      "binding": "espejo_leads",
+      "database_name": "espejo-leads",
+      "database_id": "29d4bdbe-a1c0-4cb5-8ecb-3cfaef1fe466"
+    }
+  ],
+  "observability": { "enabled": true }
+}

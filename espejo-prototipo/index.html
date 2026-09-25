@@ -1,0 +1,863 @@
+<title>Espejo Cutáneo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* ==========================================================================
+   ESPEJO · sistema visual HUD
+   Tema único y deliberado: oscuro. Una interfaz de instrumento no compite con
+   el sujeto que está midiendo. Todos los colores se declaran explícitamente.
+
+   EXCEPCIÓN DELIBERADA: el aro que rodea el visor es BLANCO NEUTRO, no cian.
+   La pantalla de la tableta ilumina la cara, y un halo de color desplazaría
+   el cociente R/G sobre el que se calcula el índice de eritema. El instrumento
+   no puede contaminar su propia medida.
+   ========================================================================== */
+:root{
+  color-scheme: dark;
+
+  --ground:#04080C;
+  --panel:#08121A;
+  --panel-2:#0B1A24;
+  --panel-3:#102633;
+  --line:#123243;
+  --line-2:#0C222E;
+  --line-hot:#1C556E;
+
+  --ink:#DCF2FA;
+  --ink-2:#8FB4C4;
+  --ink-3:#4F6F80;
+
+  --accent:#35D6F5;
+  --accent-2:#12A9C9;
+  --accent-dim:#0B5A6D;
+  --glow:rgba(53,214,245,.40);
+  --glow-soft:rgba(53,214,245,.13);
+
+  /* Estado — siempre con etiqueta de texto, nunca color a solas */
+  --st-ok:#3BE0A0;
+  --st-mid:#F5C33B;
+  --st-hi:#FF9245;
+  --st-max:#FF5C55;
+
+  /* Rampas secuenciales sobre fondo oscuro: bajo = apagado, alto = encendido */
+  --ery-1:#2A1519; --ery-2:#5E2220; --ery-3:#9A331F; --ery-4:#CE4E22; --ery-5:#FF7F40;
+  --bri-1:#221C0E; --bri-2:#4D3E13; --bri-3:#7F6617; --bri-4:#B28F19; --bri-5:#F5C93A;
+  --tex-1:#0C2229; --tex-2:#14414E; --tex-3:#1C6577; --tex-4:#248CA8; --tex-5:#35D6F5;
+
+  /* Dos familias de la misma superfamilia. Un instrumento real no usa una
+     tipografía de ciencia ficción: el carácter técnico sale de la densidad,
+     la alineación y las unidades, no de las formas de las letras. */
+  --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sans:'IBM Plex Sans', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  --hud:'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+}
+
+*{ box-sizing:border-box; }
+/* `display` de una clase gana a `[hidden]`, de modo que un botón oculto se
+   vería igualmente. No se delega esto en la hoja del contenedor. */
+[hidden]{ display:none !important; }
+body{
+  margin:0; color:var(--ink);
+  font-family:var(--sans); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  background:
+    radial-gradient(1100px 620px at 50% -8%, #0C2632 0%, rgba(12,38,50,0) 62%),
+    repeating-linear-gradient(0deg, rgba(53,214,245,.030) 0 1px, rgba(0,0,0,0) 1px 3px),
+    var(--ground);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{ margin:0; text-wrap:balance; font-weight:600; }
+p{ margin:0; }
+button{ font:inherit; color:inherit; }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+::selection{ background:var(--accent-dim); color:#fff; }
+@media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+
+/* Marco de esquinas — envoltura de instrumento */
+.brk{ position:relative; }
+.brk::before,.brk::after{
+  content:''; position:absolute; width:13px; height:13px; pointer-events:none;
+  border:1px solid var(--line-hot);
+}
+.brk::before{ top:-1px; left:-1px; border-right:0; border-bottom:0; }
+.brk::after{ bottom:-1px; right:-1px; border-left:0; border-top:0; }
+
+/* ------------------------------------------------------------------ HUD */
+.hud{
+  position:sticky; top:0; z-index:60;
+  display:flex; align-items:center; gap:0;
+  height:46px; padding:0 12px 0 16px;
+  background:linear-gradient(180deg, #08161F 0%, #061019 100%);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(53,214,245,.10), 0 10px 30px -20px #000;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.07em;
+  color:var(--ink-3); text-transform:uppercase;
+}
+.hud::-webkit-scrollbar{ display:none; }
+/* La parte informativa se desplaza; el conmutador de idioma NO, porque en un
+   teléfono quedaría fuera de la pantalla justo cuando hace falta. */
+.hud-scroll{
+  flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:16px;
+  overflow-x:auto; scrollbar-width:none; height:100%;
+}
+.hud-scroll::-webkit-scrollbar{ display:none; }
+.hud-lang{ display:flex; flex:none; margin-left:14px; border:1px solid var(--line-hot); }
+.hud-lang button{
+  padding:4px 9px; background:transparent; border:0; border-right:1px solid var(--line-hot);
+  font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--ink-3);
+  cursor:pointer; transition:color .14s ease, background .14s ease;
+}
+.hud-lang button:last-child{ border-right:0; }
+.hud-lang button:hover{ color:var(--ink-2); }
+.hud-lang button[aria-pressed="true"]{ background:rgba(53,214,245,.16); color:var(--accent); }
+.hud b{ color:var(--accent); font-weight:500; }
+.hud-mark{
+  font-family:var(--hud); font-size:14px; font-weight:600; letter-spacing:.2em;
+  color:var(--ink); text-transform:none; padding-right:15px; flex:none;
+  border-right:1px solid var(--line); margin-right:3px;
+  text-shadow:0 0 15px rgba(53,214,245,.22);
+}
+.hud-item{ display:flex; gap:6px; white-space:nowrap; flex:none; }
+.hud-spacer{ flex:1 1 auto; }
+.dot{
+  width:6px; height:6px; border-radius:50%; background:var(--st-ok);
+  display:inline-block; vertical-align:1px; box-shadow:0 0 8px currentColor;
+  animation:latido 2.4s ease-in-out infinite;
+}
+.dot.off{ background:var(--ink-3); box-shadow:none; animation:none; }
+@keyframes latido{ 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* ---------------------------------------------------------------- SHELL */
+.shell{ display:grid; grid-template-columns:206px 1fr; min-height:calc(100vh - 46px); }
+.rail{
+  border-right:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(11,26,36,.75), rgba(4,8,12,.75));
+  padding:18px 0; display:flex; flex-direction:column; gap:2px;
+}
+.rail-step{
+  position:relative; display:grid; grid-template-columns:26px 1fr; gap:9px;
+  align-items:baseline; padding:10px 16px; font-size:12.5px; color:var(--ink-3);
+  font-family:var(--hud); font-weight:500; letter-spacing:.03em;
+}
+.rail-step .num{ font-family:var(--mono); font-size:10px; letter-spacing:.02em; }
+.rail-step::before{
+  content:''; position:absolute; left:0; top:6px; bottom:6px; width:2px; background:transparent;
+}
+.rail-step.done{ color:var(--ink-2); }
+.rail-step.done .num::after{ content:'✓'; color:var(--st-ok); }
+.rail-step.active{ color:var(--ink); background:linear-gradient(90deg, rgba(53,214,245,.10), transparent 80%); }
+.rail-step.active::before{ background:var(--accent); box-shadow:0 0 12px var(--glow); }
+.rail-foot{
+  margin-top:auto; padding:15px 16px; font-family:var(--mono); font-size:9.5px;
+  line-height:1.8; color:var(--ink-3); letter-spacing:.04em;
+  border-top:1px solid var(--line-2);
+}
+
+.stage{ padding:32px 30px 70px; }
+.wrap{ max-width:840px; margin:0 auto; }
+.wrap--ancho{ max-width:1120px; margin:0 auto; }
+
+@media (max-width:900px){
+  .shell{ grid-template-columns:1fr; }
+  .rail{ flex-direction:row; border-right:0; border-bottom:1px solid var(--line); padding:0; overflow-x:auto; scrollbar-width:none; }
+  .rail::-webkit-scrollbar{ display:none; }
+  .rail-step{ white-space:nowrap; padding:12px 15px; grid-template-columns:auto auto; }
+  .rail-step::before{ left:6px; right:6px; top:auto; bottom:0; width:auto; height:2px; }
+  .rail-foot{ display:none; }
+  .stage{ padding:22px 16px 60px; }
+}
+
+/* ------------------------------------------------------------ TIPOGRAFÍA */
+.eyebrow{
+  font-family:var(--mono); font-size:10px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent);
+}
+.eyebrow--mudo{ color:var(--ink-3); }
+.display{ font-family:var(--hud); font-weight:600; line-height:1.06; letter-spacing:-.018em; }
+.lede{ font-size:16px; line-height:1.65; color:var(--ink-2); max-width:62ch; }
+.small{ font-size:13px; color:var(--ink-2); }
+.tiny{ font-size:11.5px; color:var(--ink-3); line-height:1.65; }
+.num{ font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+/* --------------------------------------------------------------- BOTONES */
+.btn{
+  position:relative; display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  padding:13px 28px; border:1px solid var(--accent); background:rgba(53,214,245,.10);
+  color:var(--accent); cursor:pointer; font-family:var(--hud); font-weight:600; font-size:13.5px;
+  letter-spacing:.05em; text-transform:uppercase;
+  transition:background .16s ease, box-shadow .16s ease, color .16s ease;
+}
+.btn:hover:not(:disabled){ background:rgba(53,214,245,.20); box-shadow:0 0 22px -4px var(--glow); color:#EAFBFF; }
+.btn:disabled{ border-color:var(--line); background:transparent; color:var(--ink-3); cursor:not-allowed; }
+.btn--solido{ background:var(--accent); color:#03181E; border-color:var(--accent); }
+.btn--solido:hover:not(:disabled){ background:#5FE4FF; color:#03181E; }
+.btn--sm{ padding:9px 16px; font-size:12px; }
+.btn-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+/* ---------------------------------------------------------------- INTRO */
+.intro-grid{ display:grid; grid-template-columns:1.12fr .88fr; gap:50px; align-items:start; }
+@media (max-width:900px){ .intro-grid{ grid-template-columns:1fr; gap:32px; } }
+.intro h1{ font-size:clamp(36px,6.2vw,64px); margin:14px 0 20px; }
+.intro h1 .on{ color:var(--accent); text-shadow:0 0 34px var(--glow); }
+
+.spec{ border-top:1px solid var(--line-hot); }
+.spec-row{
+  display:grid; grid-template-columns:1fr auto; gap:16px; align-items:baseline;
+  padding:10px 0; border-bottom:1px solid var(--line-2);
+}
+.spec-row .k{ font-size:13.5px; color:var(--ink-2); }
+.spec-row .v{ font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-align:right; text-transform:uppercase; }
+.spec-row .v.si{ color:var(--accent); }
+.spec-row .v.no{ color:var(--ink-3); }
+
+.aviso{
+  border:1px solid var(--line); border-left:2px solid var(--accent);
+  background:linear-gradient(90deg, rgba(53,214,245,.07), rgba(8,18,26,.5) 70%);
+  padding:15px 17px;
+}
+
+/* -------------------------------------------------------------- CAPTURA */
+/* El visor y los cinco indicadores TIENEN que verse a la vez: quien se está
+   encuadrando necesita leer qué condición falla sin apartar la cara. Por eso
+   la rejilla aguanta en dos columnas hasta 700 px y el conjunto se limita en
+   anchura — si el visor crece a sus anchas, empuja los indicadores fuera de
+   la pantalla en un iPad vertical. */
+.cap-grid{
+  display:grid; grid-template-columns:minmax(0,1fr) 292px; gap:26px;
+  align-items:start; max-width:880px;
+}
+@media (max-width:700px){
+  .cap-grid{ grid-template-columns:1fr; }
+}
+
+/* El aro es la fuente de luz de relleno. Blanco neutro a propósito. */
+.aro{
+  --aro-luz:#F6F8F7;
+  padding:clamp(12px, 2.4vw, 20px); background:var(--aro-luz);
+  box-shadow:0 0 60px -8px rgba(246,248,247,.30), 0 0 0 1px var(--line-hot);
+  transition:box-shadow .3s ease;
+}
+.aro.listo{ box-shadow:0 0 74px -6px rgba(246,248,247,.42), 0 0 0 1px var(--st-ok); }
+.cap-cab-movil{ display:none; }
+.checks-movil{ display:none; }
+.aro-nota{ color:#9AA8A2; }
+.aro-pie{
+  margin-top:11px; font-family:var(--mono); font-size:9.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); text-align:center; line-height:1.7;
+}
+.viewport{ position:relative; width:100%; aspect-ratio:3/4; background:#02060A; overflow:hidden; }
+.viewport video, .viewport canvas.preview{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1);
+}
+.viewport svg.reticulo{ position:absolute; inset:0; width:100%; height:100%; }
+#anillo-tics{ transform-origin:360px 480px; animation:girar 26s linear infinite; }
+@keyframes girar{ to{ transform:rotate(360deg); } }
+.barrido{
+  position:absolute; left:0; right:0; height:24%; pointer-events:none; opacity:0;
+  background:linear-gradient(180deg, rgba(53,214,245,0), rgba(53,214,245,.22) 55%, rgba(53,214,245,0));
+  box-shadow:0 0 26px var(--glow);
+}
+.barrido.on{ animation:barrer 1.5s ease-in-out infinite; }
+@keyframes barrer{ 0%{ top:-24%; opacity:.85 } 100%{ top:100%; opacity:.85 } }
+.viewport .aviso-cam{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px; padding:28px;
+  text-align:center; background:rgba(2,6,10,.94);
+}
+.cuenta{
+  position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;
+  font-family:var(--hud); font-weight:700; font-size:130px; color:var(--accent);
+  text-shadow:0 0 44px var(--glow), 0 0 6px rgba(0,0,0,.8);
+}
+
+.checks{ border-top:1px solid var(--line-hot); }
+.check{
+  display:grid; grid-template-columns:12px 1fr auto; gap:11px; align-items:center;
+  padding:11px 0; border-bottom:1px solid var(--line-2);
+}
+.check .led{ width:9px; height:9px; border-radius:50%; background:var(--panel-3); border:1px solid var(--line-hot); }
+.check.ok .led{ background:var(--st-ok); border-color:var(--st-ok); box-shadow:0 0 11px var(--st-ok); }
+.check.bad .led{ background:transparent; border-color:var(--st-max); }
+.check .nom{ font-family:var(--hud); font-weight:500; font-size:13.5px; color:var(--ink-2); }
+.check.ok .nom{ color:var(--ink); }
+.check .val{ font-family:var(--mono); font-size:10.5px; color:var(--ink-3); text-align:right; white-space:nowrap; }
+.check.ok .val{ color:var(--accent); }
+.pista{ font-size:12.5px; color:var(--ink-2); min-height:3.2em; }
+
+/* ------------------------------------------------------------------ MÓVIL
+   En un teléfono el visor ocupa toda la anchura y, con relación 3:4, empuja
+   los indicadores fuera de la pantalla. La relación no se puede tocar — define
+   el sistema de coordenadas sobre el que se miden las zonas —, así que se
+   limita la ALTURA del bloque contra el alto de la ventana y los cinco
+   indicadores pasan a una rejilla compacta de dos columnas. */
+@media (max-width:700px){
+  /* La pantalla de captura es una pantalla para MIRAR, no para leer: el
+     encabezado explicativo se reduce a una línea y el visor se queda con
+     el espacio. La instrucción útil ya la da el renglón de pistas, que
+     dice en cada momento qué condición falla. */
+  .cap-cab{ display:none; }
+  .cap-cab-movil{
+    display:block; font-size:13.5px; color:var(--ink-2);
+    margin-bottom:12px; line-height:1.5;
+  }
+  .aro-nota{ display:none; }
+  .checks-titulo{ display:none; }   /* el panel se va al visor; el rótulo sobra */
+  .aro{ max-width:calc(52vh * 0.75); margin:0 auto; }
+  .cap-grid{ gap:14px; }
+
+  /* Los cinco indicadores se superponen al visor. Un HUD se lee sobre lo que
+     observa, y así la condición que falla y la cara que hay que recolocar
+     caben siempre en la misma mirada, sea cual sea el alto de la pantalla. */
+  .checks-movil{
+    display:block; position:absolute; left:0; right:0; bottom:0; z-index:3;
+    padding:9px 7px 8px;
+    background:linear-gradient(0deg, rgba(2,6,10,.94) 30%, rgba(2,6,10,0));
+  }
+  .checks-movil .checks{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:4px; border-top:0;
+  }
+  .checks-movil .check{
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    padding:0; border-bottom:0; text-align:center;
+  }
+  .checks-movil .check .nom{
+    font-family:var(--mono); font-size:8.5px; letter-spacing:.02em;
+    text-transform:uppercase; color:var(--ink-3); line-height:1.2;
+  }
+  .checks-movil .check.ok .nom{ color:var(--st-ok); }
+  .checks-movil .check .val{ display:none; }
+  .pista{ min-height:2.4em; font-size:12.5px; margin-top:10px; }
+}
+@media (max-width:520px){
+  .stage{ padding:18px 13px 52px; }
+  /* En un teléfono el encabezado compite con el visor por la misma pantalla:
+     el visor gana, porque es lo que hay que mirar mientras uno se encuadra. */
+  .stage h2.display{ font-size:25px; }
+  .lede{ font-size:14.5px; line-height:1.55; }
+  .aro-pie{ font-size:9px; margin-top:8px; }
+  .hud{ gap:12px; padding:0 12px; font-size:10px; }
+  .hud-mark{ font-size:13px; letter-spacing:.16em; padding-right:12px; }
+  .sec{ margin-top:34px; }
+  .q-card{ padding:20px 17px 18px; }
+  .q-texto{ font-size:19px; }
+  .q-op{ padding:12px 13px; font-size:14px; }
+  .rep-hero h2{ font-size:30px; }
+  .codigo{ font-size:28px; }
+  .act-fila{ grid-template-columns:1fr; gap:4px; }
+  .act-con{ padding-top:0; }
+  .legal, .evento{ padding:18px; }
+  .evento .display{ font-size:23px; }
+  .btn{ padding:12px 20px; }
+  .gauge svg{ width:88px; }
+}
+
+/* -------------------------------------------------------------- ANÁLISIS */
+.log{ font-family:var(--mono); font-size:12px; line-height:1.7; }
+.log-row{ display:grid; grid-template-columns:28px 1fr; gap:11px; padding:8px 0; border-bottom:1px solid var(--line-2); }
+.log-row .i{ color:var(--accent-dim); }
+.log-row .t{ color:var(--ink); }
+.log-row .d{ color:var(--ink-3); font-size:11px; display:block; }
+.barra-prog{ height:2px; background:var(--line-2); overflow:hidden; }
+.barra-prog i{ display:block; height:100%; background:var(--accent); width:0; box-shadow:0 0 14px var(--glow); transition:width .3s ease; }
+
+/* ----------------------------------------------------------- CUESTIONARIO */
+.q-card{ background:var(--panel); border:1px solid var(--line); padding:26px 26px 22px; }
+.q-num{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--accent); text-transform:uppercase; }
+.q-texto{ font-family:var(--hud); font-size:21px; line-height:1.34; margin:11px 0 6px; font-weight:600; letter-spacing:-.01em; }
+.q-ayuda{ font-size:13px; color:var(--ink-3); margin-bottom:18px; }
+.q-ops{ display:flex; flex-direction:column; gap:7px; }
+.q-op{
+  display:grid; grid-template-columns:15px 1fr; gap:13px; align-items:start;
+  padding:13px 15px; border:1px solid var(--line); background:var(--panel-2);
+  cursor:pointer; text-align:left; font-size:14.5px; line-height:1.45; color:var(--ink-2);
+  transition:border-color .13s ease, background .13s ease, color .13s ease;
+}
+.q-op:hover{ border-color:var(--accent-2); background:var(--panel-3); color:var(--ink); }
+.q-op .mk{ width:13px; height:13px; border:1px solid var(--ink-3); border-radius:50%; margin-top:3px; }
+.q-op[aria-checked="true"]{ border-color:var(--accent); background:rgba(53,214,245,.10); color:var(--ink); }
+.q-op[aria-checked="true"] .mk{ border-color:var(--accent); background:var(--accent); box-shadow:inset 0 0 0 2.5px var(--panel-2), 0 0 11px var(--glow); }
+.q-prog{ display:flex; gap:3px; margin-bottom:20px; }
+.q-prog i{ flex:1; height:3px; background:var(--line-2); }
+.q-prog i.on{ background:var(--accent-dim); }
+.q-prog i.cur{ background:var(--accent); box-shadow:0 0 10px var(--glow); }
+
+/* -------------------------------------------------------------- INFORME */
+.rep-hero{ display:grid; grid-template-columns:1fr auto; gap:30px; align-items:end; padding-bottom:22px; border-bottom:1px solid var(--line-hot); }
+@media (max-width:720px){ .rep-hero{ grid-template-columns:1fr; align-items:start; } }
+.rep-hero h2{ font-family:var(--hud); font-weight:600; font-size:clamp(32px,5.2vw,52px); line-height:1.06; margin:11px 0 9px; }
+.codigo{
+  font-family:var(--mono); font-size:33px; font-weight:600; letter-spacing:.15em;
+  color:var(--accent); line-height:1; text-shadow:0 0 22px rgba(53,214,245,.25);
+}
+.codigo-pie{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:var(--ink-3); text-transform:uppercase; margin-top:8px; text-align:right; }
+@media (max-width:720px){ .codigo-pie{ text-align:left; } }
+
+.sec{ margin-top:44px; }
+.sec-cab{ display:flex; align-items:baseline; gap:12px; padding-bottom:9px; border-bottom:1px solid var(--line-hot); margin-bottom:18px; }
+.sec-cab h3{ font-family:var(--hud); font-size:15.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+.sec-cab .idx{ font-family:var(--mono); font-size:10px; color:var(--accent); letter-spacing:.08em; }
+.sec-cab .der{ margin-left:auto; font-family:var(--mono); font-size:9.5px; color:var(--ink-3); letter-spacing:.1em; text-transform:uppercase; }
+
+/* Panel de indicadores radiales */
+/* Cinco indicadores, cinco columnas. Con auto-fit el quinto se quedaba solo
+   en una segunda fila y se estiraba sobre el hueco. En pantallas estrechas
+   se pasa a filas horizontales, que tampoco dejan huérfanos. */
+.gauges{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1px; background:var(--line-2); border:1px solid var(--line-2); }
+.gauge{ background:var(--panel); padding:16px 10px 14px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.gauge svg{ display:block; width:100%; height:auto; max-width:132px; }
+.g-txt{ display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center; }
+@media (max-width:680px){
+  .gauges{ grid-template-columns:1fr; }
+  .gauge{ flex-direction:row; align-items:center; gap:16px; padding:14px; }
+  .gauge svg{ width:100px; flex:none; }
+  .g-txt{ align-items:flex-start; text-align:left; flex:1; min-width:0; }
+}
+.gauge .g-nom{ font-family:var(--hud); font-weight:600; font-size:13.5px; color:var(--ink); }
+.gauge .g-fis{ font-family:var(--mono); font-size:10.5px; color:var(--ink-2); line-height:1.55; }
+.gauge .g-desc{ font-size:11.5px; color:var(--ink-3); line-height:1.55; }
+.pill{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.12em; text-transform:uppercase;
+  padding:3px 9px; border:1px solid currentColor; white-space:nowrap;
+}
+.c-ok{ color:var(--st-ok); } .c-mid{ color:var(--st-mid); }
+.c-hi{ color:var(--st-hi); } .c-max{ color:var(--st-max); }
+
+/* Mapa por zonas */
+.mapa-grid{ display:grid; grid-template-columns:312px 1fr; gap:30px; align-items:start; }
+@media (max-width:780px){ .mapa-grid{ grid-template-columns:1fr; } }
+.seg{ display:inline-flex; border:1px solid var(--line-hot); margin-bottom:14px; }
+.seg button{
+  padding:8px 16px; background:transparent; border:0; border-right:1px solid var(--line-hot);
+  font-family:var(--mono); font-size:10px; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--ink-3); cursor:pointer; transition:color .14s ease, background .14s ease;
+}
+.seg button:last-child{ border-right:0; }
+.seg button:hover{ color:var(--ink-2); }
+.seg button[aria-pressed="true"]{ background:rgba(53,214,245,.14); color:var(--accent); text-shadow:0 0 12px var(--glow); }
+.mapa-caja{ border:1px solid var(--line); background:linear-gradient(180deg, var(--panel-2), var(--panel)); padding:14px; }
+.leyenda{ display:flex; margin-top:12px; }
+.leyenda .paso{ flex:1; height:9px; }
+.leyenda-ejes{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:9.5px; color:var(--ink-3); margin-top:5px; }
+.zt{ width:100%; border-collapse:collapse; font-size:13px; }
+.zt th{ text-align:left; font-family:var(--mono); font-size:9px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); font-weight:500; padding:0 10px 8px 0; border-bottom:1px solid var(--line-hot); }
+.zt th:not(:first-child), .zt td:not(:first-child){ text-align:right; }
+.zt td{ padding:9px 10px 9px 0; border-bottom:1px solid var(--line-2); font-family:var(--mono); font-size:12px; font-variant-numeric:tabular-nums; color:var(--ink-2); }
+.zt td:first-child{ font-family:var(--hud); font-weight:500; font-size:13.5px; color:var(--ink); }
+.zt tr.inval td{ color:var(--ink-3); font-style:italic; }
+
+/* Ejes Baumann */
+.eje{ padding:15px 0; border-bottom:1px solid var(--line-2); }
+.eje-top{ display:grid; grid-template-columns:1fr auto; gap:12px; align-items:baseline; margin-bottom:10px; }
+.eje-nom{ font-family:var(--hud); font-size:15px; font-weight:600; }
+.eje-val{ font-family:var(--mono); font-size:11px; color:var(--ink-2); }
+.eje-esc{ position:relative; height:26px; }
+.eje-pista{ position:absolute; top:11px; left:0; right:0; height:3px; background:var(--line-2); }
+.eje-pista::after{ content:''; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(53,214,245,.16), transparent); }
+.eje-centro{ position:absolute; top:5px; bottom:5px; left:50%; width:1px; background:var(--line-hot); }
+.eje-punto{ position:absolute; top:5px; width:15px; height:15px; border-radius:50%; background:var(--accent); transform:translateX(-50%); box-shadow:0 0 16px var(--glow), inset 0 0 0 2.5px var(--ground); }
+.eje-pies{ display:grid; grid-template-columns:1fr 1fr; font-family:var(--mono); font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); }
+.eje-pies span:last-child{ text-align:right; }
+.eje-desc{ font-size:12.5px; color:var(--ink-3); margin-top:7px; }
+.tag-lim{ font-family:var(--mono); font-size:9px; letter-spacing:.1em; color:var(--st-mid); text-transform:uppercase; }
+
+/* Activos y rutina */
+.act-fila{ display:grid; grid-template-columns:auto 1fr; gap:18px; padding:14px 0; border-bottom:1px solid var(--line-2); align-items:baseline; }
+.act-nom{ font-family:var(--hud); font-weight:600; font-size:14.5px; }
+.act-con{ font-family:var(--mono); font-size:10.5px; color:var(--accent); letter-spacing:.05em; white-space:nowrap; padding-top:3px; }
+.act-por{ font-size:13px; color:var(--ink-2); margin-top:4px; max-width:64ch; }
+
+.rut-grid{ display:grid; grid-template-columns:1fr 1fr; gap:26px; }
+@media (max-width:780px){ .rut-grid{ grid-template-columns:1fr; } }
+.rut h4{ font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); padding-bottom:9px; border-bottom:1px solid var(--line-hot); margin-bottom:4px; }
+.rut-paso{ display:grid; grid-template-columns:22px 1fr; gap:12px; padding:12px 0; border-bottom:1px solid var(--line-2); }
+.rut-paso .n{ font-family:var(--mono); font-size:10.5px; color:var(--accent-dim); padding-top:3px; }
+.rut-paso .c{ font-family:var(--hud); font-size:14px; font-weight:600; }
+.rut-paso .nt{ font-size:12.5px; color:var(--ink-3); margin-top:3px; }
+
+/* Producto recomendado: el número que lo justifica va SIEMPRE pegado al
+   producto. Una recomendación sin su motivo al lado es publicidad. */
+.prod{ display:grid; grid-template-columns:26px 1fr auto; gap:16px; padding:16px 0;
+  border-bottom:1px solid var(--line-2); align-items:start; }
+.prod-n{ font-family:var(--mono); font-size:10.5px; color:var(--accent-dim); padding-top:5px; }
+.prod-ranura{ font-family:var(--mono); font-size:9.5px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3); }
+.prod-marca{ font-family:var(--mono); font-size:10.5px; letter-spacing:.06em;
+  color:var(--accent); text-transform:uppercase; margin-top:5px; }
+.prod-nom{ font-size:15px; font-weight:600; line-height:1.35; margin-top:2px; }
+.prio-lista{ border-top:1px solid var(--line-hot); margin-bottom:20px; }
+.prio-fila{ display:grid; grid-template-columns:20px auto 1fr; gap:13px; align-items:baseline;
+  padding:11px 0; border-bottom:1px solid var(--line-2); }
+.prio-fila .n{ font-family:var(--mono); font-size:10.5px; color:var(--accent-dim); }
+.prio-fila .m{ font-family:var(--hud); font-weight:600; font-size:14px; white-space:nowrap; }
+.prio-fila .d{ font-size:12.5px; color:var(--ink-3); }
+@media (max-width:620px){
+  .prio-fila{ grid-template-columns:20px 1fr; }
+  .prio-fila .d{ grid-column:2; }
+}
+.prod-cubre{ font-family:var(--mono); font-size:10px; letter-spacing:.06em; color:var(--ink-3); margin-top:6px; }
+.prod-cubre b{ color:var(--accent); font-weight:500; }
+.prod-metas{ display:flex; gap:5px; flex-wrap:wrap; margin-top:7px; }
+.prod-meta{ font-family:var(--mono); font-size:9px; letter-spacing:.07em; text-transform:uppercase;
+  padding:2px 7px; border:1px solid var(--line-hot); color:var(--ink-3); }
+.prod-precio{ font-family:var(--mono); font-size:14px; color:var(--ink); white-space:nowrap; padding-top:16px; }
+@media (max-width:620px){
+  .prod{ grid-template-columns:22px 1fr; gap:11px; }
+  .prod-precio{ grid-column:2; padding-top:6px; font-size:13px; }
+}
+
+/* ------------------------------------------------------------------ CORREO */
+.cor-caja{ background:var(--panel); border:1px solid var(--line); padding:24px; max-width:560px; }
+.cor-etq{ display:block; font-family:var(--mono); font-size:10px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:9px; }
+.cor-input{
+  width:100%; padding:13px 14px; background:#050D13; color:var(--ink);
+  border:1px solid var(--line-hot); font-family:var(--mono); font-size:15px;
+}
+.cor-input::placeholder{ color:var(--ink-3); }
+.cor-input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.cor-input[aria-invalid="true"]{ border-color:var(--st-max); }
+.cor-error{ color:var(--st-max); font-size:12.5px; margin-top:8px; }
+.cor-envio{ font-family:var(--mono); font-size:11px; color:var(--ink-3); margin-top:10px; }
+.cor-envio.ok{ color:var(--st-ok); }
+.cor-envio.mal{ color:var(--st-mid); }
+.cor-check{ display:grid; grid-template-columns:auto 1fr; gap:11px; align-items:start;
+  margin-top:18px; font-size:13px; line-height:1.55; color:var(--ink-2); cursor:pointer; }
+.cor-check input{ width:17px; height:17px; margin:2px 0 0; accent-color:var(--accent); cursor:pointer; }
+
+ul.evitar{ margin:0; padding:0; }
+.evitar li{ list-style:none; padding:11px 0 11px 24px; border-bottom:1px solid var(--line-2); font-size:13.5px; position:relative; color:var(--ink-2); }
+.evitar li::before{ content:'×'; position:absolute; left:5px; top:10px; font-family:var(--mono); color:var(--st-max); font-size:14px; }
+
+details.metodo{ border-bottom:1px solid var(--line-2); }
+details.metodo summary{
+  cursor:pointer; padding:12px 0; font-family:var(--mono); font-size:10.5px;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink-2); list-style:none;
+  display:flex; align-items:center; gap:10px;
+}
+details.metodo summary::-webkit-details-marker{ display:none; }
+details.metodo summary::before{ content:'+'; color:var(--accent); font-size:13px; width:10px; }
+details.metodo[open] summary{ color:var(--accent); }
+details.metodo[open] summary::before{ content:'−'; }
+details.metodo .cuerpo{ padding:0 0 16px 20px; font-size:13px; color:var(--ink-2); max-width:66ch; line-height:1.65; }
+details.metodo .cuerpo b{ color:var(--ink); }
+
+.conf-grid{ display:grid; grid-template-columns:auto 1fr; gap:28px; align-items:center; }
+@media (max-width:620px){ .conf-grid{ grid-template-columns:1fr; gap:16px; } }
+
+.legal{
+  margin-top:46px; padding:22px; background:var(--panel);
+  border:1px solid var(--line); border-left:2px solid var(--st-mid);
+  font-size:12.5px; color:var(--ink-2); line-height:1.7;
+}
+.legal b{ color:var(--ink); }
+
+.evento{
+  margin-top:24px; padding:26px; border:1px solid var(--accent-dim);
+  background:linear-gradient(120deg, rgba(53,214,245,.14), rgba(8,18,26,.4) 62%);
+  display:grid; grid-template-columns:1fr auto; gap:22px; align-items:center;
+}
+@media (max-width:720px){ .evento{ grid-template-columns:1fr; } }
+.evento .display{ font-size:28px; color:var(--ink); text-shadow:0 0 30px var(--glow-soft); }
+
+/* ---------------------------------------------------------- CALIBRACIÓN */
+.cal-estado{
+  display:grid; grid-template-columns:auto 1fr; gap:22px; align-items:center;
+  border:1px solid var(--line); border-left:2px solid var(--st-mid);
+  background:var(--panel); padding:18px 20px;
+}
+.cal-estado.ok{ border-left-color:var(--st-ok); }
+.cal-n{ font-size:40px; font-weight:600; line-height:1; color:var(--ink); }
+.cal-estado.ok .cal-n{ color:var(--st-ok); }
+.cal-uni{ display:block; font-family:var(--mono); font-size:9.5px; color:var(--ink-3); letter-spacing:.06em; }
+.cal-code{
+  width:100%; background:#050D13; color:var(--ink); border:1px solid var(--line);
+  font-family:var(--mono); font-size:11.5px; line-height:1.7; padding:13px;
+  resize:vertical; white-space:pre; overflow-x:auto;
+}
+.cal-code:focus{ outline:1px solid var(--accent); border-color:var(--accent); }
+.cal-x{
+  background:transparent; border:1px solid var(--line); color:var(--ink-3);
+  width:22px; height:22px; line-height:1; cursor:pointer; font-family:var(--mono);
+}
+.cal-x:hover{ border-color:var(--st-max); color:var(--st-max); }
+
+dialog.modal{
+  border:1px solid var(--line-hot); padding:26px; max-width:410px;
+  background:var(--panel); color:var(--ink); box-shadow:0 0 70px -10px var(--glow);
+}
+dialog.modal::backdrop{ background:rgba(2,6,10,.78); }
+
+@media print{
+  .hud,.rail,.seg,.btn,.btn-row{ display:none !important; }
+  .shell{ grid-template-columns:1fr; }
+  body{ background:#04080C; }
+  .stage{ padding:0; }
+  .sec{ break-inside:avoid; }
+}
+</style>
+
+<div class="hud">
+  <span class="hud-mark">ESPEJO</span>
+  <div class="hud-scroll">
+    <span class="hud-item"><span data-i18n="hud.ses">SES</span> <b class="num" id="hud-sesion">—</b></span>
+    <span class="hud-item"><span data-i18n="hud.eq">EQ</span> <b class="num" id="hud-equipo">—</b></span>
+    <span class="hud-item"><span data-i18n="hud.opt">ÓPT</span> <b><span class="dot off" id="hud-led"></span> <span id="hud-cam" data-i18n="hud.espera">en espera</span></b></span>
+    <span class="hud-spacer"></span>
+    <span class="hud-item"><span data-i18n="hud.proc">PROC</span> <b data-i18n="hud.local">local · sin red</b></span>
+    <span class="hud-item num" id="hud-hora">—</span>
+  </div>
+  <div class="hud-lang" id="hud-lang" role="group" data-i18n="hud.idioma" data-i18n-attr="aria-label" aria-label="Cambiar idioma">
+    <button type="button" data-lang="es" aria-pressed="true">ES</button>
+    <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    <button type="button" data-lang="ko" aria-pressed="false">KO</button>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Fases del análisis"></nav>
+
+  <main class="stage" id="stage">
+
+    <!-- ============================================================ INTRO -->
+    <section id="s-intro" class="wrap intro">
+      <div class="intro-grid">
+        <div>
+          <p class="eyebrow" data-i18n="intro.eyebrow">Análisis cutáneo óptico · Madrid 2026</p>
+          <h1 class="display" data-i18n="intro.h1">Tu piel, <span class="on">medida</span><br>y explicada.</h1>
+          <p class="lede" data-i18n="intro.p1">
+            Espejo fotografía tu rostro una sola vez y extrae de esa imagen cinco magnitudes
+            físicas: reflexión especular, absorción de hemoglobina, relieve en la banda del
+            poro, lesiones focales y ángulo tipológico del tono. Después las cruza con un
+            cuestionario clínico breve para construir un perfil completo.
+          </p>
+          <p class="lede" style="margin-top:14px" data-i18n="intro.p2">
+            El proceso dura unos tres minutos y ocurre entero dentro de esta tableta.
+          </p>
+          <div class="btn-row" style="margin-top:28px">
+            <button class="btn btn--solido" id="btn-empezar" data-i18n="intro.btn">Iniciar análisis</button>
+            <span class="tiny" data-i18n="intro.btnNota">Retira las gafas y aparta el pelo de la frente.</span>
+          </div>
+        </div>
+
+        <div>
+          <p class="eyebrow eyebrow--mudo" style="margin-bottom:12px" data-i18n="intro.specTitulo">Qué se mide y qué no</p>
+          <div class="spec">
+            <div class="spec-row"><span class="k" data-i18n="intro.m1">Brillo superficial (sebo)</span><span class="v si" data-i18n="intro.optico">Óptico</span></div>
+            <div class="spec-row"><span class="k" data-i18n="intro.m2">Eritema · rojez</span><span class="v si" data-i18n="intro.optico">Óptico</span></div>
+            <div class="spec-row"><span class="k" data-i18n="intro.m3">Textura y poro</span><span class="v si" data-i18n="intro.optico">Óptico</span></div>
+            <div class="spec-row"><span class="k" data-i18n="intro.m4">Imperfecciones focales</span><span class="v si" data-i18n="intro.optico">Óptico</span></div>
+            <div class="spec-row"><span class="k" data-i18n="intro.m5">Tono constitutivo · ITA°</span><span class="v si" data-i18n="intro.optico">Óptico</span></div>
+            <div class="spec-row"><span class="k" data-i18n="intro.m6">Hidratación del córneo</span><span class="v no" data-i18n="intro.cuest">Cuestionario</span></div>
+            <div class="spec-row"><span class="k" data-i18n="intro.m7">Reactividad y tolerancia</span><span class="v no" data-i18n="intro.cuest">Cuestionario</span></div>
+            <div class="spec-row"><span class="k" data-i18n="intro.m8">Fotoenvejecimiento</span><span class="v no" data-i18n="intro.cuest">Cuestionario</span></div>
+          </div>
+          <p class="tiny" style="margin-top:12px" data-i18n="intro.nota">
+            La hidratación real del estrato córneo sólo se mide por corneometría
+            capacitiva, con un electrodo en contacto con la piel. Ninguna cámara
+            puede obtenerla, y este informe no simula que pueda.
+          </p>
+
+          <div class="aviso brk" style="margin-top:22px">
+            <p class="eyebrow" data-i18n="intro.privTitulo">Privacidad</p>
+            <p class="small" style="margin-top:8px" data-i18n="intro.priv">
+              La imagen se procesa en la memoria de este dispositivo y no se envía a
+              ningún servidor. No se guarda en disco ni se asocia a tu nombre. Al
+              cerrar la sesión se destruye.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== CORREO -->
+    <section id="s-correo" class="wrap" hidden>
+      <p class="eyebrow" data-i18n="cor.eyebrow">Fase 02 · Contacto</p>
+      <h2 class="display" style="font-size:34px; margin:9px 0 8px" id="cor-h2" data-i18n="cor.h2">¿Te enviamos novedades?</h2>
+      <p class="lede" style="margin-bottom:24px" id="cor-lede" data-i18n="cor.lede">
+        Déjanos tu correo si quieres que Lococo te avise de lanzamientos y ofertas.
+        Es opcional: puedes saltar este paso y el análisis funciona igual.
+      </p>
+
+      <div class="cor-caja brk">
+        <label class="cor-etq" for="correo" data-i18n="cor.etiqueta">Correo electrónico</label>
+        <input type="email" id="correo" class="cor-input" autocomplete="email"
+               inputmode="email" spellcheck="false" placeholder="nombre@correo.com">
+        <p class="cor-error" id="cor-error" hidden></p>
+
+        <label class="cor-check" id="cor-check-salud" hidden>
+          <input type="checkbox" id="cor-consent-salud">
+          <span data-i18n="cor.consentSalud">Acepto que Lococo me envíe por correo el informe de
+            este análisis. El informe incluye datos sobre el estado de mi piel; se envía una sola
+            vez y no se guarda copia.</span>
+        </label>
+
+        <label class="cor-check">
+          <input type="checkbox" id="cor-consent">
+          <span data-i18n="cor.consent">Acepto que Lococo guarde mi correo para enviarme novedades
+            y ofertas. Puedo darme de baja cuando quiera escribiendo a hola@lococo.beauty.</span>
+        </label>
+
+        <div class="btn-row" style="margin-top:20px">
+          <button class="btn btn--solido" id="btn-correo-ok" data-i18n="cor.continuar">Continuar</button>
+        </div>
+      </div>
+
+      <div class="aviso" style="margin-top:22px">
+        <p class="eyebrow" id="cor-datos-tit" data-i18n="cor.datosTitulo">Qué se guarda y qué no</p>
+        <p class="small" style="margin-top:8px" id="cor-datos" data-i18n="cor.datos">
+          <b>Tu correo</b> se guarda en un servidor de Cloudflare en Europa, junto con el idioma
+          y la fecha. Nada más.<br>
+          <b>Las imágenes y los resultados del análisis NO se guardan</b> en ningún sitio: se
+          procesan en esta tableta y se destruyen al cerrar la sesión. Tu correo nunca queda
+          asociado a tu piel.
+        </p>
+      </div>
+    </section>
+
+    <!-- ========================================================== CAPTURA -->
+    <section id="s-captura" class="wrap--ancho" hidden>
+      <div class="cap-cab">
+        <p class="eyebrow" data-i18n="cap.eyebrow">Fase 02 · Captura</p>
+        <h2 class="display" style="font-size:34px; margin:9px 0 6px" data-i18n="cap.h2">Encuadre y condiciones</h2>
+        <p class="lede" style="margin-bottom:24px" data-i18n="cap.lede">
+          Coloca la cara dentro del óvalo, mirando al frente y con expresión relajada.
+          La captura se dispara sola cuando las cinco condiciones están en verde.
+        </p>
+      </div>
+      <p class="cap-cab-movil" data-i18n="cap.ledeMovil">Coloca la cara dentro del óvalo. La captura se dispara sola.</p>
+
+      <div class="cap-grid">
+        <div>
+          <div class="aro" id="aro">
+            <div class="viewport">
+              <video id="video" playsinline autoplay muted></video>
+              <canvas class="preview" id="preview" hidden></canvas>
+              <div class="barrido" id="barrido"></div>
+              <svg class="reticulo" viewBox="0 0 720 960" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <mask id="m-ret">
+                    <rect width="720" height="960" fill="#fff"/>
+                    <ellipse cx="360" cy="480" rx="268" ry="372" fill="#000"/>
+                  </mask>
+                </defs>
+                <rect width="720" height="960" fill="rgba(2,6,10,.66)" mask="url(#m-ret)"/>
+
+                <g id="anillo-tics" opacity=".55">
+                  <circle cx="360" cy="480" r="300" fill="none" stroke="#35D6F5" stroke-width="1"
+                          stroke-dasharray="2 20" opacity=".8"/>
+                  <circle cx="360" cy="480" r="318" fill="none" stroke="#35D6F5" stroke-width="1"
+                          stroke-dasharray="1 46" opacity=".55"/>
+                </g>
+
+                <ellipse cx="360" cy="480" rx="268" ry="372" fill="none" stroke="#35D6F5"
+                         stroke-width="1.5" stroke-dasharray="10 8" opacity=".9"/>
+
+                <g stroke="#35D6F5" stroke-width="1" opacity=".45">
+                  <line x1="196" y1="420" x2="524" y2="420"/>
+                  <line x1="252" y1="632" x2="468" y2="632"/>
+                  <line x1="360" y1="112" x2="360" y2="160"/>
+                  <line x1="360" y1="800" x2="360" y2="848"/>
+                  <line x1="92" y1="480" x2="140" y2="480"/>
+                  <line x1="580" y1="480" x2="628" y2="480"/>
+                </g>
+                <g fill="#8FB4C4" font-family="IBM Plex Mono, monospace" font-size="12.5"
+                   opacity=".8" letter-spacing="1.6">
+                  <text x="196" y="409" data-i18n="cap.lineaOcular">LÍNEA OCULAR</text>
+                  <text x="252" y="621" data-i18n="cap.lineaLabial">LÍNEA LABIAL</text>
+                </g>
+
+                <g id="marcas-ok" opacity="0">
+                  <g stroke="#3BE0A0" stroke-width="3" fill="none">
+                    <path d="M18 62 L18 18 L62 18"/><path d="M658 18 L702 18 L702 62"/>
+                    <path d="M702 898 L702 942 L658 942"/><path d="M62 942 L18 942 L18 898"/>
+                  </g>
+                  <text x="360" y="916" fill="#3BE0A0" font-family="IBM Plex Mono, monospace"
+                        font-size="15" letter-spacing="3" text-anchor="middle" data-i18n="cap.alineado">ALINEADO</text>
+                </g>
+              </svg>
+              <div class="checks-movil" id="checks-movil"></div>
+              <div class="cuenta" id="cuenta" hidden></div>
+              <div class="aviso-cam" id="aviso-cam" hidden>
+                <p class="eyebrow" style="color:var(--st-mid)" data-i18n="cap.sinCamara">Cámara no disponible</p>
+                <p class="small" style="max-width:34ch" id="aviso-cam-txt"></p>
+                <label class="btn btn--sm" style="cursor:pointer">
+                  <span data-i18n="cap.usarSistema">Usar la cámara del sistema</span>
+                  <input type="file" accept="image/*" capture="user" id="file-input" hidden>
+                </label>
+              </div>
+            </div>
+            <p class="aro-pie">
+              <span data-i18n="cap.aroPie">Este aro blanco es la fuente de luz · no lo cubras</span><br>
+              <span class="aro-nota" data-i18n="cap.aroNota">Es neutro a propósito: un halo de color falsearía el índice de eritema</span>
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <p class="eyebrow eyebrow--mudo checks-titulo" style="margin-bottom:11px" data-i18n="cap.condiciones">Condiciones de captura</p>
+          <div class="checks" id="checks"></div>
+          <p class="pista" id="pista" style="margin-top:14px"></p>
+          <div class="btn-row">
+            <button class="btn btn--solido" id="btn-capturar" disabled data-i18n="cap.btnCapturar">Capturar</button>
+            <button class="btn btn--sm" id="btn-repetir" hidden data-i18n="cap.btnRepetir">Repetir</button>
+          </div>
+          <p class="tiny" style="margin-top:20px" data-i18n="cap.nota">
+            Las cinco comprobaciones replican el protocolo de fotografía clínica
+            estandarizada: sin ellas, dos capturas de la misma piel darían
+            resultados distintos y la medición no valdría nada.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================= ANÁLISIS -->
+    <section id="s-analisis" class="wrap" hidden>
+      <p class="eyebrow" data-i18n="ana.eyebrow">Fase 03 · Procesamiento</p>
+      <h2 class="display" style="font-size:34px; margin:9px 0 20px" data-i18n="ana.h2">Análisis en curso</h2>
+      <div class="barra-prog" style="margin-bottom:22px"><i id="prog"></i></div>
+      <div class="log" id="log"></div>
+    </section>
+
+    <!-- ===================================================== CUESTIONARIO -->
+    <section id="s-cuestionario" class="wrap" hidden>
+      <p class="eyebrow" data-i18n="cue.eyebrow">Fase 04 · Cuestionario clínico</p>
+      <h2 class="display" style="font-size:34px; margin:9px 0 8px" data-i18n="cue.h2">Lo que la cámara no ve</h2>
+      <p class="lede" style="margin-bottom:22px" data-i18n="cue.lede">
+        Trece preguntas sobre comportamiento, tolerancia e historia. Responde pensando
+        en cómo está tu piel habitualmente, no hoy.
+      </p>
+      <div class="q-prog" id="q-prog"></div>
+      <div class="q-card brk" id="q-card"></div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn--sm" id="btn-atras" data-i18n="cue.atras">Anterior</button>
+        <span class="tiny" id="q-contador"></span>
+      </div>
+    </section>
+
+    <!-- ====================================================== CALIBRACIÓN -->
+    <section id="s-calibracion" class="wrap--ancho" hidden></section>
+
+    <!-- ========================================================== INFORME -->
+    <section id="s-informe" class="wrap--ancho" hidden>
+      <div id="informe"></div>
+    </section>
+
+  </main>
+</div>
+
+<dialog class="modal" id="dlg-idle">
+  <p class="eyebrow" data-i18n="idle.eyebrow">Sesión inactiva</p>
+  <h3 class="display" style="font-size:21px; margin:9px 0 10px" data-i18n="idle.h3">¿Sigues ahí?</h3>
+  <p class="small" data-i18n="idle.p">La sesión se cerrará en <b class="num" id="idle-seg">20</b> segundos y se borrarán todos los datos.</p>
+  <div class="btn-row" style="margin-top:18px">
+    <button class="btn btn--solido btn--sm" id="btn-sigo" data-i18n="idle.sigo">Seguir aquí</button>
+    <button class="btn btn--sm" id="btn-cerrar-ya" data-i18n="idle.cerrar">Cerrar ahora</button>
+  </div>
+</dialog>
+
+<script src="i18n.js"></script>
+<script src="engine.js"></script>
+<script src="perfil.js"></script>
+<script src="catalogo.js"></script>
+<script src="calibracion.js"></script>
+<script src="app.js"></script>
