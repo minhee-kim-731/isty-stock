@@ -125,7 +125,18 @@ npx wrangler d1 execute espejo-leads --remote \
 > 바꿀 때는 `i18n.js`의 `cor.consent` 3개 언어와 `index.html`의 기본 문구를 같이 고칠 것.
 > 수신거부 경로가 실제로 동작하지 않으면 GDPR 위반이다.
 
-## 이메일 명단 보기 — `/admin`
+## 관리 페이지 — `/admin` (이메일 명단 + 분석 결과)
+
+**분석 결과 탭**: 결과지가 만들어질 때마다 `analisis` 테이블(D1 `espejo-leads`)에 저장된다.
+- 모든 분석: 타입·톤·지수 5개·존별 수치·문진 답·추천 제품. **이메일·사진 없이 익명.**
+- 이메일 단계에서 "사진 저장 동의"(`cor-consent-foto`)에 체크한 사람만 이메일 + 얼굴 사진(유효 영역 JPEG 512px)을
+  함께 저장한다. 사진은 **30일 후 자동 삭제**(새 분석이 저장될 때마다 오래된 사진을 지움, cron 없음).
+- `test` / `prueba` 예시 결과지는 저장하지 않는다.
+- 테이블은 Worker가 처음 쓸 때 만든다(배포 토큰에 D1 SQL 권한이 없어서). 스키마는 `esquema.sql`.
+- 화면의 개인정보 안내(intro.priv, cor.datos, cor.datosEnvio, legal, correo.privacidad)가 이 동작을
+  그대로 설명한다. **저장 방식을 바꾸면 안내문도 같이 바꿀 것** — 안내와 실제가 다르면 GDPR 위반이다.
+
+### 이메일 명단
 
 `https://<배포 주소>/admin` 에서 관리자 코드를 넣으면 마케팅 동의자 명단을 보고, CSV로 받고,
 한 줄씩 삭제할 수 있다(수신거부 요청 처리용). 코드는 Worker 시크릿 `ADMIN_CODE` 에만 있고

@@ -7,6 +7,8 @@
    POST /api/lead       → alta de correo. Guarda SÓLO datos de contacto y si
                           acepta novedades (consentimiento 1/0).
    POST /api/informe    → envía el informe por correo. NO LO GUARDA.
+   POST /api/analisis   → registro del análisis: resultados anónimos siempre;
+                          correo + foto sólo con casilla explícita (30 días).
    GET  /admin          → página de consulta del listado (código ADMIN_CODE).
    GET  /api/admin/leads, POST /api/admin/borrar → listado y bajas.
 
@@ -24,6 +26,25 @@
    ========================================================================== */
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const MAX_ANALISIS = 700 * 1024;   // JSON + foto JPEG 512 px en base64 (~100 kB)
+const DIAS_FOTO = 30;
+
+/* La tabla se crea al primer uso: el token de despliegue no tiene permiso
+   para ejecutar SQL en D1 desde fuera, pero el Worker sí. Idempotente. */
+let tablaLista = false;
+async function asegurarTabla(db) {
+  if (tablaLista) return;
+  await db.prepare(`CREATE TABLE IF NOT EXISTS analisis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creado TEXT NOT NULL,
+    sesion TEXT, idioma TEXT, modo TEXT,
+    codigo TEXT, tono TEXT, ita REAL, patron TEXT, confianza INTEGER,
+    datos TEXT NOT NULL,
+    email TEXT,
+    foto TEXT
+  )`).run();
+  tablaLista = true;
+}
 const MAX_HTML = 400 * 1024;   // un informe ronda los 30 kB; esto es techo, no objetivo
 
 function json(datos, estado) {
@@ -94,13 +115,18 @@ button.x:hover{ border-color:var(--bad); color:var(--bad); }
 .fila{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 table{ width:100%; border-collapse:collapse; font-size:14px; }
 th,td{ text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); }
-th{ font-size:12.5px; color:var(--mut); font-weight:600; }
+th{ font-size:12.5px; color:var(--mut); font-weight:600; white-space:nowrap; }
 td.n{ font-variant-numeric:tabular-nums; color:var(--mut); white-space:nowrap; }
 .err{ color:var(--bad); font-size:13.5px; margin-top:10px; }
 .wrap{ overflow-x:auto; }
+.tab{ background:transparent; color:var(--mut); border-color:var(--line); }
+.tab[aria-pressed="true"]{ background:var(--acc); color:#fff; border-color:var(--acc); }
+td.p{ font-size:12.5px; color:var(--mut); min-width:220px; }
+img.foto{ display:block; max-width:240px; border-radius:8px; margin-top:8px; }
+button.ver{ padding:3px 9px; font-size:12.5px; }
 </style></head><body><main>
-<h1>Espejo 이메일 명단</h1>
-<p class="mut">부스에서 이메일을 입력한 방문자 전체입니다. 소식 메일은 <b>마케팅 동의 = 예</b>인 사람에게만 보낼 수 있습니다. 분석 결과나 사진은 저장되지 않습니다.</p>
+<h1>Espejo 관리</h1>
+<p class="mut">이메일 명단과 분석 결과. 코드가 있는 사람만 볼 수 있습니다.</p>
 <div class="card" id="login">
   <form id="f" class="fila">
     <input id="code" type="password" placeholder="관리자 코드" autocomplete="current-password">
@@ -108,7 +134,23 @@ td.n{ font-variant-numeric:tabular-nums; color:var(--mut); white-space:nowrap; }
   </form>
   <p class="err" id="err" hidden></p>
 </div>
+<div class="fila tabs" id="tabs" hidden style="margin-bottom:16px">
+  <button class="tab" data-tab="lista" aria-pressed="true">이메일 명단</button>
+  <button class="tab" data-tab="res" aria-pressed="false">분석 결과</button>
+</div>
+<div id="res" hidden>
+  <div class="fila" style="justify-content:space-between;margin-bottom:12px">
+    <strong id="rcuenta"></strong>
+    <button class="sec" id="rcsv">CSV 다운로드</button>
+  </div>
+  <div class="card wrap"><table>
+    <thead><tr><th>시각 (마드리드)</th><th>타입</th><th>유분</th><th>홍반</th><th>결</th><th>잡티</th><th>톤균일</th><th>추천 제품</th><th>이메일 · 사진</th><th></th></tr></thead>
+    <tbody id="rtb"></tbody>
+  </table></div>
+  <p class="mut" style="margin-top:12px">결과는 모든 분석이 익명으로 저장됩니다. 이메일과 사진은 방문자가 사진 저장에 동의한 경우에만 있고, 사진은 30일 후 자동 삭제됩니다. 지수는 0–100.</p>
+</div>
 <div id="lista" hidden>
+  <p class="mut">부스에서 이메일을 입력한 방문자 전체입니다. 소식 메일은 <b>마케팅 동의 = 예</b>인 사람에게만 보낼 수 있습니다.</p>
   <div class="fila" style="justify-content:space-between;margin-bottom:12px">
     <strong id="cuenta"></strong>
     <div class="fila"><button class="sec" id="csv">CSV 다운로드</button><button class="sec" id="salir">잠그기</button></div>
@@ -136,7 +178,8 @@ function cargar(){
     try { sessionStorage.setItem('espejo.admin', codigo); } catch (e) {}
     datos = d.leads || [];
     document.getElementById('login').hidden = true;
-    document.getElementById('lista').hidden = false;
+    document.getElementById('tabs').hidden = false;
+    if (document.getElementById('res').hidden) document.getElementById('lista').hidden = false;
     var si = datos.filter(function(l){ return l.consentimiento; }).length;
     document.getElementById('cuenta').textContent = '총 ' + datos.length + '명 · 마케팅 동의 ' + si + '명';
     document.getElementById('tb').innerHTML = datos.map(function(l){
@@ -168,6 +211,59 @@ document.getElementById('tb').addEventListener('click', function(ev){
   pedir('/api/admin/borrar', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ id: Number(b.getAttribute('data-id')) }) })
     .then(function(r){ if (!r.ok) throw new Error('삭제하지 못했습니다 (' + r.status + ').'); return cargar(); })
     .catch(function(e){ alert(e.message); });
+});
+var analisis = [];
+function met(d, id){ var m = (d.metricas || []).filter(function(x){ return x.id === id; })[0]; return m ? m.indice : ''; }
+function cargarRes(){
+  return pedir('/api/admin/analisis').then(function(r){ if (!r.ok) throw new Error('불러오지 못했습니다 (' + r.status + ').'); return r.json(); })
+  .then(function(d){
+    analisis = (d.analisis || []).map(function(a){ try { a.d = JSON.parse(a.datos); } catch (e) { a.d = {}; } return a; });
+    var conFoto = analisis.filter(function(a){ return a.tiene_foto; }).length;
+    document.getElementById('rcuenta').textContent = '총 ' + analisis.length + '건 · 사진 ' + conFoto + '건';
+    document.getElementById('rtb').innerHTML = analisis.map(function(a){
+      var d = a.d || {};
+      return '<tr><td class="n">' + esc(hora(a.creado)) + '</td><td><b>' + esc(a.codigo) + '</b><div class="n">' + esc(a.tono) + ' · ITA ' + esc(a.ita) + '</div></td>' +
+        ['brillo','eritema','textura','imperfecciones','uniformidad'].map(function(k){ return '<td class="n">' + esc(met(d, k)) + '</td>'; }).join('') +
+        '<td class="p">' + (d.productos || []).map(esc).join('<br>') + '</td>' +
+        '<td>' + (a.email ? esc(a.email) : '<span class="n">익명</span>') +
+        (a.tiene_foto ? '<br><button class="sec ver" data-foto="' + a.id + '">사진 보기</button><div id="f' + a.id + '"></div>' : '') + '</td>' +
+        '<td><button class="x" data-ra="' + a.id + '">삭제</button></td></tr>';
+    }).join('') || '<tr><td colspan="10" class="n">아직 없습니다.</td></tr>';
+  });
+}
+document.getElementById('tabs').addEventListener('click', function(ev){
+  var b = ev.target.closest('.tab'); if (!b) return;
+  var t = b.getAttribute('data-tab');
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+  document.getElementById('lista').hidden = t !== 'lista';
+  document.getElementById('res').hidden = t !== 'res';
+  if (t === 'res') cargarRes().catch(function(e){ alert(e.message); });
+});
+document.getElementById('rtb').addEventListener('click', function(ev){
+  var f = ev.target.closest('button[data-foto]');
+  if (f) {
+    var id = f.getAttribute('data-foto');
+    pedir('/api/admin/foto?id=' + id).then(function(r){ if (!r.ok) throw new Error('사진이 없습니다 (30일이 지나 삭제되었을 수 있습니다).'); return r.blob(); })
+      .then(function(bl){ document.getElementById('f' + id).innerHTML = '<img class="foto" alt="" src="' + URL.createObjectURL(bl) + '">'; f.remove(); })
+      .catch(function(e){ alert(e.message); });
+    return;
+  }
+  var x = ev.target.closest('button[data-ra]'); if (!x) return;
+  if (!confirm('이 분석 기록을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  pedir('/api/admin/borrar-analisis', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ id: Number(x.getAttribute('data-ra')) }) })
+    .then(function(r){ if (!r.ok) throw new Error('삭제하지 못했습니다 (' + r.status + ').'); return cargarRes(); })
+    .catch(function(e){ alert(e.message); });
+});
+document.getElementById('rcsv').addEventListener('click', function(){
+  var cab = ['creado','codigo','tono','ita','patron','confianza','brillo','eritema','textura','imperfecciones','uniformidad','productos','respuestas','email','foto'];
+  var filas = [cab].concat(analisis.map(function(a){ var d = a.d || {};
+    return [a.creado, a.codigo, a.tono, a.ita, a.patron, a.confianza, met(d,'brillo'), met(d,'eritema'), met(d,'textura'), met(d,'imperfecciones'), met(d,'uniformidad'),
+      (d.productos || []).join(' | '), (d.respuestas || []).join(' '), a.email || '', a.tiene_foto ? 'si' : 'no']; }));
+  var csv = filas.map(function(f){ return f.map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\\r\\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\\ufeff' + csv], { type:'text/csv;charset=utf-8' }));
+  a.download = 'espejo-analisis-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
 });
 if (codigo) cargar().catch(function(){ codigo = ''; });
 </script></main></body></html>`;
@@ -244,6 +340,49 @@ export default {
       return json({ ok: true });
     }
 
+    /* ------------------------------------------------------- analisis */
+    if (url.pathname === '/api/analisis') {
+      if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+      if (!mismoOrigen(request, url)) return json({ error: 'origen' }, 403);
+      const texto = await request.text();
+      if (texto.length > MAX_ANALISIS) return json({ error: 'tamano' }, 413);
+      let c;
+      try { c = JSON.parse(texto); } catch { return json({ error: 'json' }, 400); }
+      const corto = (v, n) => (v == null ? null : String(v).slice(0, n));
+      /* Correo y foto van juntos y sólo con consentimiento explícito. */
+      let email = null, foto = null;
+      if (c.consentimientoFoto === true) {
+        const e = String(c.email || '').trim().toLowerCase();
+        if (CORREO.test(e) && e.length <= 254) email = e;
+        if (email && typeof c.foto === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(c.foto)) foto = c.foto;
+      }
+      const datos = JSON.stringify({
+        metricas: Array.isArray(c.metricas) ? c.metricas.slice(0, 10) : [],
+        zonas: Array.isArray(c.zonas) ? c.zonas.slice(0, 10) : [],
+        respuestas: Array.isArray(c.respuestas) ? c.respuestas.slice(0, 20) : [],
+        productos: Array.isArray(c.productos) ? c.productos.slice(0, 10).map(p => corto(p, 160)) : []
+      });
+      try {
+        await asegurarTabla(env.espejo_leads);
+        await env.espejo_leads.batch([
+          env.espejo_leads.prepare(
+            `INSERT INTO analisis (creado, sesion, idioma, modo, codigo, tono, ita, patron, confianza, datos, email, foto)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(new Date().toISOString(), corto(c.sesion, 32), corto(c.idioma, 5), corto(c.modo, 16),
+                 corto(c.codigo, 8), corto(c.tono, 8), Number.isFinite(+c.ITA) ? +c.ITA : null,
+                 corto(c.patron, 16), Number.isFinite(+c.confianza) ? Math.round(+c.confianza) : null,
+                 datos, email, foto),
+          // Caducidad de las fotos: se aplica en cada alta, sin cron.
+          env.espejo_leads.prepare(
+            `UPDATE analisis SET foto = NULL WHERE foto IS NOT NULL AND creado < ?`
+          ).bind(new Date(Date.now() - DIAS_FOTO * 864e5).toISOString())
+        ]);
+      } catch {
+        return json({ error: 'db' }, 500);
+      }
+      return json({ ok: true });
+    }
+
     /* ---------------------------------------------------------- admin */
     if (url.pathname === '/admin') {
       if (!env.ADMIN_CODE) return new Response('Not found', { status: 404 });
@@ -260,6 +399,38 @@ export default {
         'SELECT id, email, idioma, consentimiento, creado FROM leads ORDER BY creado DESC'
       ).all();
       return json({ leads: results });
+    }
+    if (url.pathname === '/api/admin/analisis') {
+      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      await asegurarTabla(env.espejo_leads);
+      const { results } = await env.espejo_leads.prepare(
+        `SELECT id, creado, idioma, modo, codigo, tono, ita, patron, confianza, datos, email,
+                foto IS NOT NULL AS tiene_foto
+         FROM analisis ORDER BY creado DESC LIMIT 2000`
+      ).all();
+      return json({ analisis: results });
+    }
+    if (url.pathname === '/api/admin/foto') {
+      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      const id = Number(url.searchParams.get('id'));
+      if (!Number.isInteger(id) || id <= 0) return json({ error: 'id' }, 400);
+      const fila = await env.espejo_leads.prepare('SELECT foto FROM analisis WHERE id = ?').bind(id).first();
+      if (!fila || !fila.foto) return json({ error: 'sin_foto' }, 404);
+      const b = atob(fila.foto.split(',')[1]);
+      const bytes = new Uint8Array(b.length);
+      for (let i = 0; i < b.length; i++) bytes[i] = b.charCodeAt(i);
+      return new Response(bytes, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'no-store' } });
+    }
+    if (url.pathname === '/api/admin/borrar-analisis') {
+      if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+      if (!mismoOrigen(request, url)) return json({ error: 'origen' }, 403);
+      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      let cuerpo;
+      try { cuerpo = await request.json(); } catch { return json({ error: 'json' }, 400); }
+      const id = Number(cuerpo.id);
+      if (!Number.isInteger(id) || id <= 0) return json({ error: 'id' }, 400);
+      await env.espejo_leads.prepare('DELETE FROM analisis WHERE id = ?').bind(id).run();
+      return json({ ok: true });
     }
     if (url.pathname === '/api/admin/borrar') {
       if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);

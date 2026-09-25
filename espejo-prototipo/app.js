@@ -198,6 +198,7 @@
        no se guarda para novedades y el análisis sigue igual. */
     S.correo = email;
     S.consintioSalud = S.puedeEnviar && $('cor-consent-salud').checked;
+    S.consintioFoto = $('cor-consent-foto').checked;
 
     var boton = $('btn-correo-ok');
     boton.disabled = true;
@@ -1282,6 +1283,7 @@
     $('btn-fin').addEventListener('click', reiniciarSesion);
 
     if (!conservarScroll) enviarInforme(res, perfil, rec, typeof rut !== 'undefined' ? rut : null);
+    if (!conservarScroll) guardarAnalisis(res, perfil, typeof rut !== 'undefined' ? rut : null);
   }
 
   /* ---------------------------------------------------------- ENVÍO
@@ -1437,6 +1439,39 @@
 
   /* Se dispara una vez, al terminar el informe. No bloquea: quien está
      delante ya tiene sus resultados en pantalla. */
+  /* Registro del análisis (2026-09-26, a petición de Lococo).
+     Siempre: los resultados, SIN correo ni foto (anónimos).
+     Sólo con la casilla de foto marcada y un correo: además el correo y la
+     imagen de la zona útil en JPEG. El servidor borra las fotos a los 30
+     días. El informe de ejemplo («test») no se registra. Un fallo aquí no
+     afecta al visitante. */
+  function guardarAnalisis(res, perfil, rut) {
+    if (S.analisisGuardado || S.modoFoto === 'prevista' || !res) return;
+    S.analisisGuardado = true;
+    var g = res.global;
+    var datos = {
+      sesion: S.sesionId, idioma: I.idioma(), modo: S.modoFoto || '',
+      codigo: perfil.codigo, tono: g.tono && g.tono.codigo, ITA: +g.ITA.toFixed(1),
+      patron: g.patron && g.patron.clave, confianza: res.confianza,
+      metricas: res.metricas.map(function (m) {
+        return { id: m.id, valor: +(+m.valor).toFixed(2), indice: Math.round(m.indice) };
+      }),
+      zonas: res.zonas.map(function (z) {
+        return { id: z.id, valido: !!z.valido, EI: z.EI, brillo: z.brilloArea, textura: z.textura, ITA: z.ITA, lesiones: z.lesiones };
+      }),
+      respuestas: S.respuestas.slice(),
+      productos: rut && rut.pasos ? rut.pasos.map(function (p) { return p.producto.b + ' · ' + p.producto.n; }) : []
+    };
+    if (S.consintioFoto && S.correo && res.util && res.util.canvas) {
+      datos.email = S.correo;
+      datos.consentimientoFoto = true;
+      try { datos.foto = res.util.canvas.toDataURL('image/jpeg', 0.82); } catch (e) {}
+    }
+    fetch('/api/analisis', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(datos)
+    }).catch(function () {});
+  }
+
   function enviarInforme(res, perfil, rec, rut) {
     if (!S.puedeEnviar || !S.correo || !S.consintioSalud || S.informeEnviado) return;
     S.informeEnviado = true;
@@ -1501,7 +1536,9 @@
     $('correo').value = '';
     $('cor-consent').checked = false;
     $('cor-consent-salud').checked = false;
-    S.correo = null; S.consintioSalud = false;
+    $('cor-consent-foto').checked = false;
+    S.correo = null; S.consintioSalud = false; S.consintioFoto = false;
+    S.analisisGuardado = false;
     $('video').hidden = false;
     S.inicio = new Date();
     iniciarHud();
