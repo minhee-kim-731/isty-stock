@@ -4,7 +4,8 @@
    Sirve los ficheros estáticos y expone tres rutas.
 
    GET  /api/capacidad  → ¿está configurado el envío de informes?
-   POST /api/lead       → alta de correo. Guarda SÓLO datos de contacto.
+   POST /api/lead       → alta de correo. Guarda SÓLO datos de contacto y si
+                          acepta novedades (consentimiento 1/0).
    POST /api/informe    → envía el informe por correo. NO LO GUARDA.
    GET  /admin          → página de consulta del listado (código ADMIN_CODE).
    GET  /api/admin/leads, POST /api/admin/borrar → listado y bajas.
@@ -99,7 +100,7 @@ td.n{ font-variant-numeric:tabular-nums; color:var(--mut); white-space:nowrap; }
 .wrap{ overflow-x:auto; }
 </style></head><body><main>
 <h1>Espejo 이메일 명단</h1>
-<p class="mut">마케팅 수신에 동의한 방문자만 저장됩니다. 분석 결과나 사진은 저장되지 않습니다.</p>
+<p class="mut">부스에서 이메일을 입력한 방문자 전체입니다. 소식 메일은 <b>마케팅 동의 = 예</b>인 사람에게만 보낼 수 있습니다. 분석 결과나 사진은 저장되지 않습니다.</p>
 <div class="card" id="login">
   <form id="f" class="fila">
     <input id="code" type="password" placeholder="관리자 코드" autocomplete="current-password">
@@ -113,7 +114,7 @@ td.n{ font-variant-numeric:tabular-nums; color:var(--mut); white-space:nowrap; }
     <div class="fila"><button class="sec" id="csv">CSV 다운로드</button><button class="sec" id="salir">잠그기</button></div>
   </div>
   <div class="card wrap"><table>
-    <thead><tr><th>이메일</th><th>언어</th><th>등록 시각 (마드리드)</th><th></th></tr></thead>
+    <thead><tr><th>이메일</th><th>마케팅 동의</th><th>언어</th><th>등록 시각 (마드리드)</th><th></th></tr></thead>
     <tbody id="tb"></tbody>
   </table></div>
   <p class="mut" style="margin-top:12px">수신거부 요청(sales@lococo.beauty)이 오면 해당 줄의 삭제를 눌러주세요. 삭제는 되돌릴 수 없으니 필요하면 먼저 CSV를 받아두세요.</p>
@@ -136,11 +137,12 @@ function cargar(){
     datos = d.leads || [];
     document.getElementById('login').hidden = true;
     document.getElementById('lista').hidden = false;
-    document.getElementById('cuenta').textContent = '총 ' + datos.length + '명';
+    var si = datos.filter(function(l){ return l.consentimiento; }).length;
+    document.getElementById('cuenta').textContent = '총 ' + datos.length + '명 · 마케팅 동의 ' + si + '명';
     document.getElementById('tb').innerHTML = datos.map(function(l){
-      return '<tr><td>' + esc(l.email) + '</td><td class="n">' + esc(l.idioma) + '</td><td class="n">' + esc(hora(l.creado)) +
+      return '<tr><td>' + esc(l.email) + '</td><td>' + (l.consentimiento ? '<b style="color:var(--acc)">예</b>' : '<span class="n">아니오</span>') + '</td><td class="n">' + esc(l.idioma) + '</td><td class="n">' + esc(hora(l.creado)) +
         '</td><td><button class="x" data-id="' + l.id + '" data-email="' + esc(l.email) + '">삭제</button></td></tr>';
-    }).join('') || '<tr><td colspan="4" class="n">아직 없습니다.</td></tr>';
+    }).join('') || '<tr><td colspan="5" class="n">아직 없습니다.</td></tr>';
   });
 }
 document.getElementById('f').addEventListener('submit', function(ev){
@@ -153,7 +155,7 @@ document.getElementById('salir').addEventListener('click', function(){
   location.reload();
 });
 document.getElementById('csv').addEventListener('click', function(){
-  var filas = [['email','idioma','creado']].concat(datos.map(function(l){ return [l.email, l.idioma, l.creado]; }));
+  var filas = [['email','marketing','idioma','creado']].concat(datos.map(function(l){ return [l.email, l.consentimiento ? 'si' : 'no', l.idioma, l.creado]; }));
   var csv = filas.map(function(f){ return f.map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\\r\\n');
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\\ufeff' + csv], { type:'text/csv;charset=utf-8' }));
@@ -191,19 +193,23 @@ export default {
       const idioma = String(cuerpo.idioma || '').slice(0, 5);
       const sesion = String(cuerpo.sesion || '').slice(0, 32);
       if (!CORREO.test(email) || email.length > 254) return json({ error: 'email' }, 400);
-      /* Sin consentimiento no se guarda. El RGPD no admite un consentimiento
-         deducido del silencio ni de una casilla premarcada. */
-      if (cuerpo.consentimiento !== true) return json({ error: 'consentimiento' }, 400);
+      /* El correo se guarda con o sin casilla; lo que la casilla decide es si
+         se le puede escribir con novedades. Sólo cuenta un `true` explícito:
+         el RGPD no admite un consentimiento deducido del silencio. */
+      const consiente = cuerpo.consentimiento === true ? 1 : 0;
 
       try {
         await env.espejo_leads.prepare(
           `INSERT INTO leads (email, idioma, consentimiento, sesion, creado)
-           VALUES (?, ?, 1, ?, ?)
+           VALUES (?, ?, ?, ?, ?)
            ON CONFLICT(email) DO UPDATE SET
              idioma = excluded.idioma,
+             -- Volver sin marcar no retira un consentimiento dado: la baja
+             -- se pide por correo y se hace desde /admin.
+             consentimiento = MAX(consentimiento, excluded.consentimiento),
              sesion = excluded.sesion,
              creado = excluded.creado`
-        ).bind(email, idioma, sesion, new Date().toISOString()).run();
+        ).bind(email, idioma, consiente, sesion, new Date().toISOString()).run();
       } catch {
         return json({ error: 'db' }, 500);
       }
@@ -251,7 +257,7 @@ export default {
     if (url.pathname === '/api/admin/leads') {
       if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
       const { results } = await env.espejo_leads.prepare(
-        'SELECT id, email, idioma, creado FROM leads ORDER BY creado DESC'
+        'SELECT id, email, idioma, consentimiento, creado FROM leads ORDER BY creado DESC'
       ).all();
       return json({ leads: results });
     }

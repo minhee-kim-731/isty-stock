@@ -194,15 +194,16 @@
 
     /* Si el alta falla no se bloquea a nadie: el análisis es lo que la persona
        vino a hacer, y perder un correo importa menos que perder al visitante. */
-    var alta = consiente
-      ? fetch('/api/lead', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            email: email, idioma: I.idioma(), sesion: S.sesionId, consentimiento: true
-          })
-        }).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); })
-      : Promise.resolve();
+    /* El correo se guarda siempre (Lococo quiere ver quién ha pasado por el
+       puesto); la casilla sólo decide si se le puede escribir con novedades.
+       El texto «Qué guardamos» lo dice así. */
+    var alta = fetch('/api/lead', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        email: email, idioma: I.idioma(), sesion: S.sesionId, consentimiento: consiente
+      })
+    }).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); });
 
     alta.then(function () {
       campo.value = '';
