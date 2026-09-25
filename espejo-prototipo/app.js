@@ -667,9 +667,62 @@
          escalón de luminancia que la banda confunde con un hueco.
        · focos: las lesiones que ya detecta el paso 5, a su tamaño real.     */
   var LUPA_ZONAS = ['nariz', 'mejillaD', 'frente'];
-  var LUPA_PX = 96;                                       // lado del recorte
-  var LUPA_ZOOM = 3;
-  var LUPA_MM = Math.round(LUPA_PX * E.MM_PER_PX);        // ≈ 25 mm
+  var LUPA_PX = 56;                                       // lado del recorte
+  var LUPA_ZOOM = 5;
+  var LUPA_MM = Math.round(LUPA_PX * E.MM_PER_PX);        // ≈ 15 mm
+
+  /* Dónde mirar dentro de cada zona. Con un recorte de 25 mm centrado en el
+     polígono, la nariz enseñaba las fosas nasales y la frente el nacimiento
+     del pelo. El recorte es ahora más pequeño y se BUSCA dentro de la zona:
+     gana la ventana con más piel limpia (máscara de piel y sin píxeles
+     oscuros: pelo, fosas, sombra). El ancla desempata hacia el sitio que
+     interesa mirar: dorso de la nariz, parte baja de la frente. */
+  var LUPA_ANCLA = { nariz: [0.5, 0.48], frente: [0.5, 0.22] };
+
+  function enPoligono(px, py, poly) {
+    var dentro = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) dentro = !dentro;
+    }
+    return dentro;
+  }
+
+  function colocarLupa(res, Z, luma) {
+    var u = res.util, W = u.w, H = u.h, m = res.mapas.mascara, L = LUPA_PX;
+    // Mediana de luminancia de la piel de la zona: la referencia de "oscuro".
+    var hist = new Uint32Array(256), n = 0, x, y, i;
+    for (y = 0; y < H; y += 2) for (x = 0; x < W; x += 2) {
+      i = y * W + x;
+      if (m[i] && enPoligono(x / W, y / H, Z.poly)) { hist[luma[i]]++; n++; }
+    }
+    var med = 0;
+    for (var a = 0, v = 0; v < 256; v++) { a += hist[v]; if (a >= n / 2) { med = v; break; } }
+    var oscuro = med * 0.72;
+
+    var c = LUPA_ANCLA[Z.id] || centroide(Z.poly);
+    var ax = c[0] * W, ay = c[1] * H, diag = Math.hypot(W, H);
+    var mejor = null;
+    for (var y0 = 0; y0 <= H - L; y0 += 4) for (var x0 = 0; x0 <= W - L; x0 += 4) {
+      // La ventana entera tiene que caer dentro de la zona.
+      if (!enPoligono(x0 / W, y0 / H, Z.poly) || !enPoligono((x0 + L) / W, y0 / H, Z.poly) ||
+          !enPoligono(x0 / W, (y0 + L) / H, Z.poly) || !enPoligono((x0 + L) / W, (y0 + L) / H, Z.poly)) continue;
+      var ok = 0, tot = 0;
+      for (y = y0; y < y0 + L; y += 2) for (x = x0; x < x0 + L; x += 2) {
+        i = y * W + x; tot++;
+        if (m[i] && luma[i] >= oscuro) ok++;
+      }
+      var d = Math.hypot(x0 + L / 2 - ax, y0 + L / 2 - ay) / diag;
+      var nota = ok / tot - d * 0.6;
+      if (!mejor || nota > mejor.nota) mejor = { x0: x0, y0: y0, nota: nota };
+    }
+    if (mejor) return mejor;
+    // Zona más estrecha que la ventana: se centra en el ancla, como antes.
+    return {
+      x0: Math.max(0, Math.min(W - L, Math.round(ax - L / 2))),
+      y0: Math.max(0, Math.min(H - L, Math.round(ay - L / 2)))
+    };
+  }
 
   function puntosPoro(res, x0, y0, lado) {
     var u = res.util, m = res.mapas, W = u.w, H = u.h, esp = m.especular;
@@ -703,13 +756,15 @@
   function pintarLupas(res) {
     if (!res.mapas || !res.util) return;
     var u = res.util, dpr = Math.min(2, window.devicePixelRatio || 1);
+    var px = u.ctx.getImageData(0, 0, u.w, u.h).data, luma = new Uint8Array(u.w * u.h);
+    for (var q = 0; q < luma.length; q++) {
+      luma[q] = (px[q * 4] * 54 + px[q * 4 + 1] * 183 + px[q * 4 + 2] * 19) >> 8;
+    }
     Array.prototype.forEach.call(document.querySelectorAll('#informe .lupa'), function (fig) {
       var id = fig.getAttribute('data-zona');
       var Z = E.ZONES.filter(function (q) { return q.id === id; })[0];
       var z = res.zonas.filter(function (q) { return q.id === id; })[0];
-      var c = centroide(Z.poly);
-      var x0 = Math.max(0, Math.min(u.w - LUPA_PX, Math.round(c[0] * u.w - LUPA_PX / 2)));
-      var y0 = Math.max(0, Math.min(u.h - LUPA_PX, Math.round(c[1] * u.h - LUPA_PX / 2)));
+      var pos = colocarLupa(res, Z, luma), x0 = pos.x0, y0 = pos.y0;
       var lado = LUPA_PX * LUPA_ZOOM, k = LUPA_ZOOM * dpr;
 
       var cv = fig.querySelector('canvas');

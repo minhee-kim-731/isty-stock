@@ -65,7 +65,7 @@
     /* --- Cabecera ---------------------------------------------------- */
     'hud.ses':   { es: 'SES', en: 'SES', ko: "세션" },
     'hud.eq':    { es: 'EQ', en: 'DEV', ko: "기기" },
-    'hud.opt':   { es: 'ÓPT', en: 'OPT', ko: "광학" },
+    'hud.opt':   { es: 'Cámara', en: 'OPT', ko: "광학" },
     /* Desde que existe el alta de correo, la página SÍ hace una llamada de
        red. El rótulo se acota al análisis, que es lo que sigue siendo cierto. */
     'hud.proc':  { es: 'ANÁLISIS', en: 'ANALYSIS', ko: "분석" },
@@ -84,7 +84,7 @@
     'fase.cuest':  { es: 'Cuestionario', en: 'Questionnaire', ko: "문진" },
     'fase.informe':{ es: 'Informe', en: 'Report', ko: "결과지" },
     'rail.pie': {
-      es: 'Procesamiento local<br>Sin transmisión de datos<br>Análisis cosmético,<br>no diagnóstico médico',
+      es: 'Las fotos no salen de esta tableta<br>Análisis cosmético, no médico',
       en: 'Runs on this device<br>No data transmitted<br>Cosmetic analysis,<br>not a medical diagnosis', ko: "기기 내부에서 처리<br>데이터 전송 없음<br>미용 목적 분석,<br>의학적 진단 아님" },
     'rail.calib': { es: 'Calibración', en: 'Calibration', ko: "보정" },
     'rail.calibPie': {
@@ -95,58 +95,50 @@
 
     /* --- Intro -------------------------------------------------------- */
     'intro.eyebrow': {
-      es: 'Análisis cutáneo óptico · Madrid 2026',
+      es: 'Análisis de piel · Madrid 2026',
       en: 'Optical skin analysis · Madrid 2026', ko: "광학 피부 분석 · 마드리드 2026" },
     'intro.h1': {
-      es: 'Tu piel, <span class="on">medida</span><br>y explicada.',
+      es: 'Tu piel en<br><span class="on">3 minutos</span>.',
       en: 'Your skin, <span class="on">measured</span><br>and explained.', ko: "당신의 피부,<br><span class=\"on\">측정</span>하고 설명합니다." },
     'intro.p1': {
-      es: 'Espejo fotografía tu rostro una sola vez y extrae de esa imagen cinco magnitudes ' +
-          'físicas: reflexión especular, absorción de hemoglobina, relieve en la banda del ' +
-          'poro, lesiones focales y ángulo tipológico del tono. Después las cruza con un ' +
-          'cuestionario clínico breve para construir un perfil completo.',
+      es: 'Espejo hace una foto de tu cara y mide cinco cosas: brillo, rojez, textura, imperfecciones y tono. Después te hace cinco preguntas rápidas y, con todo eso, arma tu perfil de piel.',
       en: 'Espejo photographs your face once and pulls five physical quantities out of that ' +
           'image: specular reflection, haemoglobin absorption, relief in the pore band, focal ' +
           'lesions and the typology angle of your skin tone. It then cross-checks them against ' +
           'a short clinical questionnaire to build a full profile.', ko: "Espejo는 얼굴을 한 번 촬영해 그 이미지에서 다섯 가지 물리량을 뽑아냅니다 — 정반사, 헤모글로빈 흡수, 모공 대역의 요철, 국소 병변, 피부톤의 유형각(ITA). 그다음 짧은 임상 문진과 교차해 전체 프로필을 구성합니다." },
     'intro.p2': {
-      es: 'El proceso dura unos tres minutos y ocurre entero dentro de esta tableta.',
+      es: 'Todo se hace dentro de esta tableta.',
       en: 'The whole thing takes about three minutes and happens entirely on this tablet.', ko: "전 과정은 약 3분이 걸리고, 이 태블릿 안에서만 이루어집니다." },
     'intro.btn':  { es: 'Iniciar análisis', en: 'Start analysis', ko: "분석 시작" },
     'intro.btnNota': {
       es: 'Retira las gafas y aparta el pelo de la frente.',
       en: 'Take off your glasses and move your hair off your forehead.', ko: "안경을 벗고 이마의 머리카락을 넘겨주세요." },
-    'intro.specTitulo': { es: 'Qué se mide y qué no', en: 'What is measured, and what is not', ko: "무엇을 측정하고 무엇을 측정하지 않는가" },
-    'intro.m1': { es: 'Brillo superficial (sebo)', en: 'Surface shine (sebum)', ko: "표면 유분 (피지)" },
-    'intro.m2': { es: 'Eritema · rojez', en: 'Erythema · redness', ko: "홍반 · 붉은기" },
-    'intro.m3': { es: 'Textura y poro', en: 'Texture and pores', ko: "결과 모공" },
-    'intro.m4': { es: 'Imperfecciones focales', en: 'Focal blemishes', ko: "국소 잡티" },
-    'intro.m5': { es: 'Tono constitutivo · ITA°', en: 'Constitutive tone · ITA°', ko: "고유 피부톤 · ITA°" },
-    'intro.m6': { es: 'Hidratación del córneo', en: 'Stratum corneum hydration', ko: "각질층 수분" },
-    'intro.m7': { es: 'Reactividad y tolerancia', en: 'Reactivity and tolerance', ko: "반응성과 내성" },
-    'intro.m8': { es: 'Fotoenvejecimiento', en: 'Photoageing', ko: "광노화" },
-    'intro.optico': { es: 'Óptico', en: 'Optical', ko: "광학" },
-    'intro.cuest':  { es: 'Cuestionario', en: 'Questionnaire', ko: "문진" },
+    'intro.specTitulo': { es: 'Qué analizamos', en: 'What is measured, and what is not', ko: "무엇을 측정하고 무엇을 측정하지 않는가" },
+    'intro.m1': { es: 'Brillo (sebo)', en: 'Surface shine (sebum)', ko: "표면 유분 (피지)" },
+    'intro.m2': { es: 'Rojez', en: 'Erythema · redness', ko: "홍반 · 붉은기" },
+    'intro.m3': { es: 'Textura y poros', en: 'Texture and pores', ko: "결과 모공" },
+    'intro.m4': { es: 'Imperfecciones', en: 'Focal blemishes', ko: "국소 잡티" },
+    'intro.m5': { es: 'Tono de piel', en: 'Constitutive tone · ITA°', ko: "고유 피부톤 · ITA°" },
+    'intro.m6': { es: 'Hidratación', en: 'Stratum corneum hydration', ko: "각질층 수분" },
+    'intro.m7': { es: 'Sensibilidad', en: 'Reactivity and tolerance', ko: "반응성과 내성" },
+    'intro.m8': { es: 'Envejecimiento por el sol', en: 'Photoageing', ko: "광노화" },
+    'intro.optico': { es: 'Con la cámara', en: 'Optical', ko: "광학" },
+    'intro.cuest':  { es: 'Con preguntas', en: 'Questionnaire', ko: "문진" },
     'intro.nota': {
-      es: 'La hidratación real del estrato córneo sólo se mide por corneometría capacitiva, ' +
-          'con un electrodo en contacto con la piel. Ninguna cámara puede obtenerla, y este ' +
-          'informe no simula que pueda.',
+      es: 'La hidratación real solo se puede medir con un aparato en contacto con la piel. Por eso aquí la sacamos de tus respuestas.',
       en: 'Real stratum corneum hydration is only measurable by capacitive corneometry, with ' +
           'an electrode touching the skin. No camera can obtain it, and this report does not ' +
           'pretend otherwise.', ko: "각질층의 실제 수분량은 전극을 피부에 접촉시키는 정전용량식 코니오미터로만 측정됩니다. 어떤 카메라로도 얻을 수 없으며, 이 결과지는 얻을 수 있는 척하지 않습니다." },
     'intro.privTitulo': { es: 'Privacidad', en: 'Privacy', ko: "개인정보" },
     'intro.priv': {
-      es: 'La imagen se procesa en la memoria de este dispositivo y no se envía a ningún ' +
-          'servidor. No se guarda en disco ni se asocia a tu nombre. Al cerrar la sesión se ' +
-          'destruye. Si nos dejas tu correo, eso sí se guarda — pero aparte, y nunca unido a ' +
-          'tu análisis.',
+      es: 'La foto se procesa en esta tableta y no se envía a ningún servidor. No se guarda ni se asocia a tu nombre, y se borra al terminar. Si nos dejas tu correo, ese sí lo guardamos, pero por separado y nunca junto a tu análisis.',
       en: 'The image is processed in this device\'s memory and never sent to a server. It is ' +
           'not written to disk and not linked to your name. It is destroyed when the session ' +
           'ends. If you give us your email, that is stored — but separately, and never joined ' +
           'to your analysis.', ko: "이미지는 이 기기의 메모리에서 처리되며 어떤 서버로도 전송되지 않습니다. 디스크에 저장되지 않고 이름과 연결되지도 않습니다. 세션을 닫으면 파기됩니다. 이메일을 남기시면 그것은 저장되지만, 별도로 저장되며 분석 결과와 결합되지 않습니다." },
 
     /* --- Correo ------------------------------------------------------- */
-    'cor.eyebrow': { es: 'Fase 02 · Contacto', en: 'Step 02 · Contact', ko: "02단계 · 연락처" },
+    'cor.eyebrow': { es: 'Paso 2 de 6', en: 'Step 02 · Contact', ko: "02단계 · 연락처" },
     'cor.h2':      { es: '¿Te enviamos novedades?', en: 'Want to hear from us?', ko: "소식을 보내드릴까요?" },
     'cor.lede': {
       es: 'Déjanos tu correo si quieres que Lococo te avise de lanzamientos y ofertas. ' +
@@ -161,12 +153,9 @@
           'I can unsubscribe at any time by writing to hola@lococo.beauty.', ko: "Lococo가 신제품·혜택 안내를 위해 제 이메일을 저장하는 데 동의합니다. hola@lococo.beauty 로 언제든 수신을 해지할 수 있습니다." },
     'cor.continuar': { es: 'Continuar', en: 'Continue', ko: "계속" },
     'cor.saltar':    { es: 'Saltar este paso', en: 'Skip this step', ko: "이 단계 건너뛰기" },
-    'cor.datosTitulo': { es: 'Qué se guarda y qué no', en: 'What is stored, and what is not', ko: "무엇이 저장되고 무엇이 저장되지 않는가" },
+    'cor.datosTitulo': { es: 'Qué guardamos', en: 'What is stored, and what is not', ko: "무엇이 저장되고 무엇이 저장되지 않는가" },
     'cor.datos': {
-      es: '<b>Tu correo</b> se guarda en un servidor de Cloudflare en Europa, junto con el ' +
-          'idioma y la fecha. Nada más.<br><b>Las imágenes y los resultados del análisis NO se ' +
-          'guardan</b> en ningún sitio: se procesan en esta tableta y se destruyen al cerrar la ' +
-          'sesión. Tu correo nunca queda asociado a tu piel.',
+      es: '<b>Tu correo</b> se guarda en un servidor de Cloudflare en Europa, con el idioma y la fecha. Nada más.<br><b>Las fotos y los resultados no se guardan.</b> Se procesan en esta tableta y se borran al terminar. Tu correo nunca se vincula con tu piel.',
       en: '<b>Your email</b> is stored on a Cloudflare server in Europe, along with the language ' +
           'and the date. Nothing else.<br><b>The images and the analysis results are NOT stored</b> ' +
           'anywhere: they are processed on this tablet and destroyed when the session ends. Your ' +
@@ -196,39 +185,36 @@
     'fase.correo':    { es: 'Contacto', en: 'Contact', ko: "연락처" },
 
     /* --- Captura ------------------------------------------------------ */
-    'cap.eyebrow': { es: 'Fase 02 · Captura', en: 'Step 02 · Capture', ko: "03단계 · 촬영" },
-    'cap.h2':      { es: 'Encuadre y condiciones', en: 'Framing and conditions', ko: "구도와 촬영 조건" },
+    'cap.eyebrow': { es: 'Paso 3 de 6', en: 'Step 02 · Capture', ko: "03단계 · 촬영" },
+    'cap.h2':      { es: 'Colócate frente a la cámara', en: 'Framing and conditions', ko: "구도와 촬영 조건" },
     'cap.lede': {
-      es: 'Coloca la cara dentro del óvalo, mirando al frente y con expresión relajada. ' +
-          'La captura se dispara sola cuando las cinco condiciones están en verde.',
+      es: 'Pon la cara dentro del óvalo, mirando al frente y con el gesto relajado. La foto se hace sola cuando los cinco indicadores estén en verde.',
       en: 'Place your face inside the oval, looking straight ahead with a relaxed expression. ' +
           'The capture fires by itself once all five conditions turn green.', ko: "얼굴을 타원 안에 넣고 정면을 바라본 채 표정을 풀어주세요. 다섯 가지 조건이 모두 초록색이 되면 자동으로 촬영됩니다." },
     'cap.ledeMovil': {
-      es: 'Coloca la cara dentro del óvalo. La captura se dispara sola.',
+      es: 'Pon la cara dentro del óvalo. La foto se hace sola.',
       en: 'Place your face inside the oval. The capture fires by itself.', ko: "얼굴을 타원 안에 맞춰주세요. 자동으로 촬영됩니다." },
-    'cap.lineaOcular': { es: 'LÍNEA OCULAR', en: 'EYE LINE', ko: "눈 기준선" },
-    'cap.lineaLabial': { es: 'LÍNEA LABIAL', en: 'MOUTH LINE', ko: "입 기준선" },
-    'cap.alineado':    { es: 'ALINEADO', en: 'ALIGNED', ko: "정렬 완료" },
+    'cap.lineaOcular': { es: 'ojos', en: 'EYE LINE', ko: "눈 기준선" },
+    'cap.lineaLabial': { es: 'boca', en: 'MOUTH LINE', ko: "입 기준선" },
+    'cap.alineado':    { es: 'Perfecto', en: 'ALIGNED', ko: "정렬 완료" },
     'cap.sinCamara':   { es: 'Cámara no disponible', en: 'Camera unavailable', ko: "카메라를 사용할 수 없음" },
     'cap.usarSistema': { es: 'Usar la cámara del sistema', en: 'Use the system camera', ko: "시스템 카메라 사용" },
     'cap.aroPie': {
-      es: 'Este aro blanco es la fuente de luz · no lo cubras',
+      es: 'El marco blanco ilumina tu cara. No lo tapes.',
       en: 'This white ring is the light source · do not cover it', ko: "이 흰색 테두리가 광원입니다 · 가리지 마세요" },
     'cap.aroNota': {
-      es: 'Es neutro a propósito: un halo de color falsearía el índice de eritema',
+      es: 'Es blanco a propósito: una luz de color alteraría la medida de la rojez.',
       en: 'It is neutral on purpose: a coloured halo would skew the erythema index', ko: "의도적으로 무채색입니다. 색이 들어간 빛은 홍반지수를 왜곡시킵니다" },
-    'cap.condiciones': { es: 'Condiciones de captura', en: 'Capture conditions', ko: "촬영 조건" },
+    'cap.condiciones': { es: 'Antes de la foto', en: 'Capture conditions', ko: "촬영 조건" },
     'cap.btnCapturar': { es: 'Capturar', en: 'Capture', ko: "촬영" },
     'cap.btnRepetir':  { es: 'Repetir', en: 'Retake', ko: "다시 촬영" },
     'cap.nota': {
-      es: 'Las cinco comprobaciones replican el protocolo de fotografía clínica estandarizada: ' +
-          'sin ellas, dos capturas de la misma piel darían resultados distintos y la medición ' +
-          'no valdría nada.',
+      es: 'Estas cinco comprobaciones hacen que dos fotos de la misma piel den el mismo resultado.',
       en: 'The five checks reproduce standardised clinical photography protocol. Without them, ' +
           'two captures of the same skin would give different results and the measurement ' +
           'would be worthless.', ko: "다섯 가지 검사는 표준 임상 사진 촬영 프로토콜을 그대로 옮긴 것입니다. 이것이 없으면 같은 피부를 두 번 찍어도 결과가 달라지고, 측정은 아무 가치가 없어집니다." },
     'cap.ok': {
-      es: 'Condiciones correctas. Mantén la posición.',
+      es: 'Todo bien. No te muevas.',
       en: 'Conditions met. Hold still.', ko: "조건 충족. 자세를 유지하세요." },
     'cap.permisoDenegado': {
       es: 'Permiso de cámara denegado. Puedes hacer la foto con la cámara del sistema.',
@@ -250,17 +236,17 @@
     'chk.estabilidad': { es: 'Estabilidad', en: 'Stability', ko: "흔들림" },
     'chk.encuadre.p':  { es: 'Acerca o aleja la cara hasta llenar el óvalo.',
                          en: 'Move closer or further until your face fills the oval.', ko: "얼굴이 타원을 채우도록 가까이 또는 멀리 이동하세요." },
-    'chk.exposicion.p':{ es: 'Demasiada o muy poca luz. Gira la tableta hacia una zona más neutra.',
+    'chk.exposicion.p':{ es: 'Hay demasiada o muy poca luz. Busca un sitio con una luz más suave.',
                          en: 'Too much or too little light. Turn the tablet towards a more neutral spot.', ko: "빛이 너무 많거나 적습니다. 태블릿을 더 중립적인 쪽으로 돌리세요." },
-    'chk.uniformidad.p':{ es: 'La luz llega de un lado. Colócate de frente a la fuente principal.',
+    'chk.uniformidad.p':{ es: 'La luz te da de lado. Ponte de frente a la luz principal.',
                           en: 'Light is coming from one side. Face the main light source.', ko: "빛이 한쪽에서만 옵니다. 주 광원을 정면으로 마주하세요." },
-    'chk.enfoque.p':   { es: 'La imagen está blanda. Mantén la distancia y espera al enfoque.',
+    'chk.enfoque.p':   { es: 'La imagen sale borrosa. No te muevas y espera a que enfoque.',
                          en: 'The image is soft. Hold the distance and wait for focus.', ko: "이미지가 흐립니다. 거리를 유지하고 초점이 맞을 때까지 기다리세요." },
-    'chk.estabilidad.p':{ es: 'Quédate quieto un momento.', en: 'Hold still for a moment.', ko: "잠시 움직이지 마세요." },
+    'chk.estabilidad.p':{ es: 'No te muevas un momento.', en: 'Hold still for a moment.', ko: "잠시 움직이지 마세요." },
 
     /* --- Análisis ----------------------------------------------------- */
-    'ana.eyebrow': { es: 'Fase 03 · Procesamiento', en: 'Step 03 · Processing', ko: "04단계 · 처리" },
-    'ana.h2':      { es: 'Análisis en curso', en: 'Analysis under way', ko: "분석 진행 중" },
+    'ana.eyebrow': { es: 'Paso 4 de 6', en: 'Step 03 · Processing', ko: "04단계 · 처리" },
+    'ana.h2':      { es: 'Analizando tu piel…', en: 'Analysis under way', ko: "분석 진행 중" },
     'ana.error':   { es: 'Error de procesamiento', en: 'Processing error', ko: "처리 오류" },
     'ana.errorDet':{ es: '{m} · vuelve a capturar la imagen',
                      en: '{m} · capture the image again',
@@ -268,11 +254,10 @@
     },
 
     /* --- Cuestionario ------------------------------------------------- */
-    'cue.eyebrow': { es: 'Fase 04 · Cuestionario clínico', en: 'Step 04 · Clinical questionnaire', ko: "05단계 · 임상 문진" },
+    'cue.eyebrow': { es: 'Paso 5 de 6', en: 'Step 04 · Clinical questionnaire', ko: "05단계 · 임상 문진" },
     'cue.h2':      { es: 'Lo que la cámara no ve', en: 'What the camera cannot see', ko: "카메라가 보지 못하는 것" },
     'cue.lede': {
-      es: 'Cinco preguntas sobre lo que la cámara no puede ver: cómo se comporta tu piel, ' +
-          'cómo tolera y cómo se hidrata. Responde pensando en cómo está habitualmente, no hoy.',
+      es: 'Cinco preguntas rápidas sobre cómo se comporta tu piel. Piensa en cómo está normalmente, no solo hoy.',
       en: 'Five questions about what the camera cannot see: how your skin behaves, how it ' +
           'tolerates and how it holds water. Answer for how it usually is, not today.', ko: "카메라가 볼 수 없는 것에 관한 5개 문항입니다 — 피부의 반응, 내성, 수분. 오늘이 아니라 평소 피부 상태를 기준으로 답해주세요." },
     'cue.atras':   { es: 'Anterior', en: 'Back', ko: "이전" },
@@ -314,27 +299,22 @@
       en: 'Sebum distribution sits within the balanced band.', ko: "피지 분포가 균형 범위 안에 있습니다." },
 
     'inf.s1':     { es: 'Medición óptica', en: 'Optical measurement', ko: "광학 측정" },
-    'inf.s1der':  { es: 'valores físicos', en: 'physical values', ko: "물리량" },
+    'inf.s1der':  { es: '', en: 'physical values', ko: "물리량" },
     'inf.s1nota': {
-      es: 'Las marcas exteriores del arco separan las bandas óptimo / moderado / elevado / alto ' +
-          '(30, 55 y 78 sobre 100). El índice es una escala operativa de este equipo; la cifra ' +
-          'con unidades bajo cada indicador es la magnitud física realmente medida, y es la que ' +
-          'conviene comparar entre sesiones.',
+      es: 'Las marcas del arco separan los tramos óptimo, moderado, elevado y alto (30, 55 y 78 sobre 100). El índice es una escala propia de este equipo; para comparar entre sesiones, fíjate en la cifra con unidades.',
       en: 'The outer ticks on each arc mark the optimal / moderate / elevated / high bands ' +
           '(30, 55 and 78 out of 100). The index is an operating scale specific to this unit; ' +
           'the figure with units beneath each dial is the physical quantity actually measured, ' +
           'and that is the one to compare across sessions.', ko: "각 게이지 바깥의 눈금은 최적 / 중등도 / 상승 / 높음 구간을 나눕니다 (100 중 30, 55, 78). 지수는 이 장비의 운용 척도이고, 게이지 아래 단위가 붙은 수치가 실제로 측정된 물리량입니다. 세션 간 비교는 그 수치로 하세요." },
-    'inf.indice': { es: 'ÍNDICE', en: 'INDEX', ko: "지수" },
+    'inf.indice': { es: 'índice', en: 'INDEX', ko: "지수" },
 
-    'lupa.titulo':  { es: 'Análisis ampliado', en: 'Magnified analysis', ko: "확대 분석" },
+    'lupa.titulo':  { es: 'Tu piel de cerca', en: 'Magnified analysis', ko: "확대 분석" },
     'lupa.poros':   { es: 'puntos de poro', en: 'pore points', ko: "모공 검출점" },
     'lupa.focos':   { es: 'focos', en: 'foci', ko: "국소 병변" },
     'lupa.leyPoro': { es: 'Punto de poro (banda r1–r4)', en: 'Pore point (r1–r4 band)', ko: "모공 검출점 (결 대역 r1–r4)" },
     'lupa.leyFoco': { es: 'Foco eritematoso', en: 'Erythematous focus', ko: "국소 홍반 병변" },
     'lupa.nota': {
-      es: 'Ampliación digital de la misma foto que se ha medido ({m} mm/px); no hay una segunda captura. ' +
-          'Los puntos de poro son mínimos locales de la banda de textura: un indicador óptico de relieve, ' +
-          'no un recuento clínico de poros. Las zonas apagadas quedan fuera de la medición.',
+      es: 'Es la misma foto que se ha medido, ampliada ({m} mm/px). Los círculos azules marcan posibles poros: son una pista óptica, no un recuento clínico. Las zonas oscurecidas no se han medido.',
       en: 'Digital magnification of the same photo that was measured ({m} mm/px); there is no second capture. ' +
           'Pore points are local minima of the texture band: an optical relief indicator, not a clinical ' +
           'pore count. Dimmed areas are outside the measurement.',
@@ -363,7 +343,7 @@
     },
 
     'inf.s3':    { es: 'Perfil por cuestionario', en: 'Questionnaire profile', ko: "문진 프로필" },
-    'inf.s3der': { es: 'marco Baumann', en: 'Baumann framework', ko: "Baumann 체계" },
+    'inf.s3der': { es: 'tipo Baumann', en: 'Baumann framework', ko: "Baumann 체계" },
     'inf.limite':{ es: 'límite', en: 'borderline', ko: "경계" },
     'inf.hidrat':{ es: 'Hidratación', en: 'Hydration', ko: "수분" },
     'inf.autoinf':{ es: 'autoinforme', en: 'self-reported', ko: "자가 보고" },
@@ -377,7 +357,7 @@
       en: 'Measurement versus answers', ko: "측정값과 응답의 대조" },
 
     'inf.s4':     { es: 'Activos indicados', en: 'Indicated actives', ko: "권장 활성성분" },
-    'inf.s4der':  { es: 'sin marcas', en: 'no brands', ko: "브랜드 없음" },
+    'inf.s4der':  { es: '', en: 'no brands', ko: "브랜드 없음" },
     'inf.porQue': { es: 'Por qué esta selección: ', en: 'Why this selection: ', ko: "이 선택의 근거: " },
     'inf.s4nota': {
       es: 'Concentraciones orientativas de uso cosmético habitual. Introduce un activo nuevo ' +
@@ -386,38 +366,34 @@
           'two weeks so you can tell what agrees with your skin and what does not.', ko: "일반적인 화장품 사용 기준의 참고 농도입니다. 무엇이 맞고 안 맞는지 가려내려면 새 성분은 2주에 하나씩 도입하세요." },
 
     'inf.sProd':    { es: 'Tu rutina Lococo', en: 'Your Lococo routine', ko: "당신의 Lococo 루틴" },
-    'inf.sProdDer': { es: 'surtido real', en: 'products in stock', ko: "실제 재고" },
+    'inf.sProdDer': { es: 'disponibles hoy', en: 'products in stock', ko: "실제 재고" },
     'inf.prodIntro': {
-      es: 'Cinco pasos escogidos del surtido de Lococo a partir de lo medido. Primero las ' +
-          'prioridades con la cifra que las sostiene; después, qué cubre cada paso.',
+      es: 'Cinco productos de Lococo elegidos según lo que hemos medido. Arriba, lo que más necesita tu piel; debajo, qué hace cada producto.',
       en: 'Five steps picked from the Lococo range based on what was measured. First the ' +
           'priorities with the figure behind each one; then what each step covers.', ko: "측정 결과를 바탕으로 Lococo 재고에서 고른 5단계입니다. 먼저 우선순위와 그 근거 수치, 그다음 각 단계가 무엇을 담당하는지." },
     'inf.prodPrio': { es: 'Prioridades detectadas', en: 'Detected priorities', ko: "감지된 우선순위" },
     'inf.cubre':    { es: 'Cubre', en: 'Covers', ko: "담당" },
     'inf.prodNota': {
-      es: 'Precios de venta al público. La selección es determinista: la misma piel da ' +
-          'siempre la misma rutina. Si algo no está disponible en el puesto, cualquier ' +
-          'producto de la misma categoría con las mismas etiquetas sirve igual.',
+      es: 'Precios de venta al público. La misma piel siempre recibe la misma rutina. Si algo se ha agotado en el puesto, cualquier producto de la misma categoría y con las mismas etiquetas sirve igual.',
       en: 'Retail prices. The selection is deterministic: the same skin always gives the ' +
           'same routine. If something is out of stock at the stand, any product in the same ' +
           'category with the same tags works just as well.', ko: "소비자가 기준입니다. 선택은 결정적입니다 — 같은 피부는 항상 같은 루틴을 받습니다. 현장에 재고가 없으면 같은 카테고리·같은 태그의 다른 제품으로 대체해도 동일합니다." },
     'inf.s5':     { es: 'Estructura de rutina', en: 'Routine structure', ko: "루틴 구성" },
-    'inf.s5der':  { es: 'categorías', en: 'categories', ko: "카테고리" },
+    'inf.s5der':  { es: '', en: 'categories', ko: "카테고리" },
     'inf.manana': { es: 'Mañana', en: 'Morning', ko: "아침" },
     'inf.noche':  { es: 'Noche', en: 'Night', ko: "저녁" },
 
-    'inf.s6': { es: 'Qué evitar en tu caso', en: 'What to avoid in your case', ko: "당신의 경우 피해야 할 것" },
+    'inf.s6': { es: 'Mejor evitar', en: 'What to avoid in your case', ko: "당신의 경우 피해야 할 것" },
 
-    'inf.s7':    { es: 'Método y limitaciones', en: 'Method and limitations', ko: "방법과 한계" },
-    'inf.s7der': { es: 'lectura técnica', en: 'technical detail', ko: "기술 설명" },
+    'inf.s7':    { es: 'Cómo se ha medido', en: 'Method and limitations', ko: "방법과 한계" },
+    'inf.s7der': { es: '', en: 'technical detail', ko: "기술 설명" },
 
-    'inf.s8':    { es: 'Condiciones de la sesión', en: 'Session conditions', ko: "세션 조건" },
-    'inf.s8der': { es: 'trazabilidad', en: 'traceability', ko: "추적성" },
+    'inf.s8':    { es: 'Datos de la sesión', en: 'Session conditions', ko: "세션 조건" },
+    'inf.s8der': { es: '', en: 'traceability', ko: "추적성" },
     'inf.confianza': { es: 'Confianza', en: 'Confidence', ko: "신뢰도" },
     'inf.reducen': { es: '<b>Factores que la reducen:</b> ', en: '<b>What lowers it:</b> ', ko: "<b>신뢰도를 낮추는 요인:</b> " },
     'inf.sinIncidencias': {
-      es: 'Captura sin incidencias: referencia de blanco válida, cobertura de piel suficiente ' +
-          'y las seis zonas con muestra bastante.',
+      es: 'Captura correcta: referencia de blanco válida, suficiente piel visible y las seis zonas con muestra suficiente.',
       en: 'Clean capture: valid white reference, sufficient skin coverage and all six zones ' +
           'with enough sample.', ko: "이상 없는 촬영: 유효한 화이트 레퍼런스, 충분한 피부 커버리지, 6개 존 모두 표본 충분." },
     'inf.sesion':    { es: 'Sesión', en: 'Session', ko: "세션" },

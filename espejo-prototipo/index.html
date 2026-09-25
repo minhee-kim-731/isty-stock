@@ -630,17 +630,23 @@ dialog.modal::backdrop{ background:rgba(2,6,10,.78); }
 details.metodo summary{ font-size:13px; }
 .sec-cab h3{ font-size:17px; letter-spacing:-.01em; }
 @media (max-width:700px){ .checks-movil .check .nom{ font-size:10px; } }
+
+/* Barra superior: solo marca, estado de cámara e idioma. La sesión, el
+   equipo y la hora siguen en el informe (Datos de la sesión). */
+.hud-mark{ font-size:15px; letter-spacing:-.01em; }
+.hud b{ font-weight:600; }
+.sec-cab .idx{ display:none; }
 </style>
 
 <div class="hud">
-  <span class="hud-mark">ESPEJO</span>
+  <span class="hud-mark">Espejo</span>
   <div class="hud-scroll">
-    <span class="hud-item"><span data-i18n="hud.ses">SES</span> <b class="num" id="hud-sesion">—</b></span>
-    <span class="hud-item"><span data-i18n="hud.eq">EQ</span> <b class="num" id="hud-equipo">—</b></span>
+    <span class="hud-item" hidden><span data-i18n="hud.ses">SES</span> <b class="num" id="hud-sesion">—</b></span>
+    <span class="hud-item" hidden><span data-i18n="hud.eq">EQ</span> <b class="num" id="hud-equipo">—</b></span>
     <span class="hud-item"><span data-i18n="hud.opt">ÓPT</span> <b><span class="dot off" id="hud-led"></span> <span id="hud-cam" data-i18n="hud.espera">en espera</span></b></span>
     <span class="hud-spacer"></span>
-    <span class="hud-item"><span data-i18n="hud.proc">PROC</span> <b data-i18n="hud.local">local · sin red</b></span>
-    <span class="hud-item num" id="hud-hora">—</span>
+    <span class="hud-item" hidden><span data-i18n="hud.proc">PROC</span> <b data-i18n="hud.local">local · sin red</b></span>
+    <span class="hud-item num" id="hud-hora" hidden>—</span>
   </div>
   <div class="hud-lang" id="hud-lang" role="group" data-i18n="hud.idioma" data-i18n-attr="aria-label" aria-label="Cambiar idioma">
     <button type="button" data-lang="es" aria-pressed="true">ES</button>
