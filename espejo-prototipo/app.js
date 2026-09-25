@@ -665,6 +665,26 @@
          en brillo especular y a su alrededor: el borde de un reflejo es un
          escalón de luminancia que la banda confunde con un hueco.
        · focos: las lesiones que ya detecta el paso 5, a su tamaño real.     */
+  /* Secciones del informe que Lococo ha retirado (2026-09-26). Se apagan
+     aquí en vez de borrarlas: volver a mostrarlas es cambiar un valor. */
+  var MOSTRAR_LUPA = false;
+  var MOSTRAR_CUESTIONARIO = false;
+
+  /* Enlace al producto en la tienda. El catálogo no guarda la URL de cada
+     ficha, así que se enlaza a la búsqueda de la tienda con marca y nombre:
+     no se rompe si cambia el handle en Shopify. Las UTM permiten ver en
+     Shopify qué ventas vinieron del puesto. */
+  var TIENDA = 'https://lococo.beauty';
+  function urlProducto(pr, medio) {
+    // Sin volumen ni signos: «150ml» o «AHA + BHA» hacen fallar la búsqueda
+    // si la ficha los escribe de otra manera.
+    var q = (pr.b + ' ' + pr.n)
+      .replace(/\b\d+([.,]\d+)?\s?(ml|g|ea|pcs|pads?|sheets?)\b/gi, ' ')
+      .replace(/[:+&()\/,]/g, ' ').replace(/\s+/g, ' ').trim();
+    return TIENDA + '/search?type=product&q=' + encodeURIComponent(q) +
+      '&utm_source=espejo&utm_medium=' + medio + '&utm_campaign=madrid2026';
+  }
+
   var LUPA_ZONAS = ['nariz', 'mejillaD', 'frente'];
   var LUPA_PX = 56;                                       // lado del recorte
   var LUPA_ZOOM = 5;
@@ -948,6 +968,7 @@
     H.push('</div></div>');
 
     /* --- 03 Análisis ampliado --------------------------------------- */
+    if (MOSTRAR_LUPA) {
     H.push(sec('03', T('lupa.titulo'), '×' + LUPA_ZOOM + ' · ' + LUPA_MM + ' mm'));
     H.push('<div class="lupa-grid">');
     LUPA_ZONAS.forEach(function (id) {
@@ -962,8 +983,10 @@
     H.push('</div><p class="lupa-ley"><span class="lp"></span>' + T('lupa.leyPoro') +
       '<span class="ll"></span>' + T('lupa.leyFoco') + '</p>' +
       '<p class="tiny" style="margin-top:10px">' + TF('lupa.nota', { m: mmpx }) + '</p></div>');
+    }
 
     /* --- 04 Perfil por cuestionario --------------------------------- */
+    if (MOSTRAR_CUESTIONARIO) {
     H.push(sec('04', T('inf.s3'), T('inf.s3der')));
     ['DO', 'SR', 'PN', 'WT'].forEach(function (k) {
       var d = perfil.definiciones[k], e = perfil.ejes[k];
@@ -990,6 +1013,7 @@
       H.push('</div>');
     }
     H.push('</div>');
+    }
 
     /* --- 04 Activos ------------------------------------------------- */
     H.push(sec('05', T('inf.s4'), T('inf.s4der')));
@@ -1036,7 +1060,9 @@
             : '') +
           '<div class="prod-metas">' +
           paso.metas.map(function (m) { return '<span class="prod-meta">' + esc(TX(m)) + '</span>'; }).join('') +
-          '</div></div>' +
+          '</div>' +
+          '<a class="prod-link" href="' + esc(urlProducto(paso.producto, 'pantalla')) +
+          '" target="_blank" rel="noopener">' + T('inf.verProducto') + ' →</a></div>' +
           '<span class="prod-precio">' + esc(paso.producto.p) + ' €</span></div>');
       });
       H.push('<p class="tiny" style="margin-top:14px">' + T('inf.prodNota') + '</p></div>');
@@ -1224,7 +1250,7 @@
     irA(F_INFORME);
     if (conservarScroll) window.scrollTo(0, y);
 
-    pintarLupas(res);
+    if (MOSTRAR_LUPA) pintarLupas(res);
 
     /* Interacciones del informe */
     var mapaActual = 'eritema';
@@ -1337,6 +1363,7 @@
     H.push('</table></td></tr>');
 
     /* Lo que la cámara no mide: se declara como tal */
+    if (MOSTRAR_CUESTIONARIO) {
     H.push(tituloCorreo(T('inf.s3'), T('correo.declarado')));
     H.push('<tr><td style="background:' + CO.palido + ';border-radius:14px;padding:8px 18px">' +
       '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">');
@@ -1352,6 +1379,7 @@
         (i ? ';border-top:1px solid ' + CO.borde : '') + '">' + esc(f[1]) + '</td></tr>');
     });
     H.push('</table></td></tr>');
+    }
 
     /* Rutina Lococo */
     if (rut && rut.pasos.length) {
@@ -1367,6 +1395,8 @@
           '<div style="margin-top:4px;font-size:15px;line-height:1.4;color:' + CO.tinta + ls + '"><b>' + esc(paso.producto.b) + '</b><br>' +
           esc(paso.producto.n) + '</div>' +
           (paso.cubre ? '<div style="margin-top:6px;font-size:12px;color:' + CO.suave + ls + '">' + T('inf.cubre') + ' · ' + esc(TX(paso.cubre)) + '</div>' : '') +
+          '<a href="' + esc(urlProducto(paso.producto, 'email')) + '" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:700;color:' +
+          CO.azul + ';text-decoration:none' + ls + '">' + T('inf.verProducto') + ' →</a>' +
           '</td><td align="right" valign="top" style="padding:18px 16px 0 0;font-size:15px;font-weight:800;color:' + CO.tinta +
           ';white-space:nowrap">' + esc(paso.producto.p) + ' €</td></tr></table></td></tr>');
       });

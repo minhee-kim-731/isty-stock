@@ -6,6 +6,8 @@
    GET  /api/capacidad  → ¿está configurado el envío de informes?
    POST /api/lead       → alta de correo. Guarda SÓLO datos de contacto.
    POST /api/informe    → envía el informe por correo. NO LO GUARDA.
+   GET  /admin          → página de consulta del listado (código ADMIN_CODE).
+   GET  /api/admin/leads, POST /api/admin/borrar → listado y bajas.
 
    La distinción entre las dos últimas es deliberada. Los índices de una piel
    son dato de salud a efectos del RGPD (art. 9). Enviarlos a quien los ha
@@ -53,6 +55,120 @@ async function enviar(env, para, asunto, html) {
   });
   if (!r.ok) throw new Error('proveedor ' + r.status + ' ' + (await r.text()).slice(0, 200));
 }
+
+/* ----------------------------------------------------------- admin
+   El listado de correos es de Lococo, no del puesto: se consulta desde una
+   página aparte con un código guardado como secreto (ADMIN_CODE), nunca en
+   el repositorio. La comparación es de tiempo constante para no filtrar el
+   código carácter a carácter. Sin secreto configurado, la ruta no existe. */
+async function autorizado(request, env) {
+  if (!env.ADMIN_CODE) return false;
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest('SHA-256', enc.encode(request.headers.get('x-admin-code') || '')),
+    crypto.subtle.digest('SHA-256', enc.encode(env.ADMIN_CODE))
+  ]);
+  return crypto.subtle.timingSafeEqual(a, b);
+}
+
+const ADMIN_HTML = `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Espejo · 이메일 명단</title>
+<style>
+:root{ color-scheme:light dark; --bg:#f6f7f9; --fg:#14181f; --mut:#667085; --line:#e4e7ec; --card:#fff; --acc:#2966FF; --bad:#d92d20; }
+@media (prefers-color-scheme:dark){ :root{ --bg:#0b0f14; --fg:#e6ebf2; --mut:#8a94a6; --line:#1f2733; --card:#121821; } }
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,BlinkMacSystemFont,'Pretendard','Apple SD Gothic Neo',system-ui,sans-serif; letter-spacing:-.01em; }
+main{ max-width:860px; margin:0 auto; padding:32px 16px 60px; }
+h1{ font-size:22px; margin:0 0 4px; }
+p.mut{ color:var(--mut); margin:0 0 20px; font-size:13.5px; }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+input{ font:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; width:100%; max-width:320px; }
+button{ font:inherit; font-weight:600; padding:10px 16px; border-radius:8px; border:1px solid var(--acc); background:var(--acc); color:#fff; cursor:pointer; }
+button.sec{ background:transparent; color:var(--acc); }
+button.x{ padding:4px 10px; font-size:12.5px; border-color:var(--line); background:transparent; color:var(--mut); }
+button.x:hover{ border-color:var(--bad); color:var(--bad); }
+.fila{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+table{ width:100%; border-collapse:collapse; font-size:14px; }
+th,td{ text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); }
+th{ font-size:12.5px; color:var(--mut); font-weight:600; }
+td.n{ font-variant-numeric:tabular-nums; color:var(--mut); white-space:nowrap; }
+.err{ color:var(--bad); font-size:13.5px; margin-top:10px; }
+.wrap{ overflow-x:auto; }
+</style></head><body><main>
+<h1>Espejo 이메일 명단</h1>
+<p class="mut">마케팅 수신에 동의한 방문자만 저장됩니다. 분석 결과나 사진은 저장되지 않습니다.</p>
+<div class="card" id="login">
+  <form id="f" class="fila">
+    <input id="code" type="password" placeholder="관리자 코드" autocomplete="current-password">
+    <button>열기</button>
+  </form>
+  <p class="err" id="err" hidden></p>
+</div>
+<div id="lista" hidden>
+  <div class="fila" style="justify-content:space-between;margin-bottom:12px">
+    <strong id="cuenta"></strong>
+    <div class="fila"><button class="sec" id="csv">CSV 다운로드</button><button class="sec" id="salir">잠그기</button></div>
+  </div>
+  <div class="card wrap"><table>
+    <thead><tr><th>이메일</th><th>언어</th><th>등록 시각 (마드리드)</th><th></th></tr></thead>
+    <tbody id="tb"></tbody>
+  </table></div>
+  <p class="mut" style="margin-top:12px">수신거부 요청(sales@lococo.beauty)이 오면 해당 줄의 삭제를 눌러주세요. 삭제는 되돌릴 수 없으니 필요하면 먼저 CSV를 받아두세요.</p>
+</div>
+<script>
+var datos = [];
+var codigo = '';
+try { codigo = sessionStorage.getItem('espejo.admin') || ''; } catch (e) {}
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function hora(iso){ try { return new Date(iso).toLocaleString('ko-KR', { timeZone:'Europe/Madrid', dateStyle:'short', timeStyle:'short' }); } catch (e) { return iso; } }
+function pedir(ruta, op){ op = op || {}; op.headers = Object.assign({ 'x-admin-code': codigo }, op.headers || {}); return fetch(ruta, op); }
+function error(t){ var e = document.getElementById('err'); e.textContent = t; e.hidden = false; }
+function cargar(){
+  return pedir('/api/admin/leads').then(function(r){
+    if (r.status === 401) throw new Error('코드가 맞지 않습니다.');
+    if (!r.ok) throw new Error('불러오지 못했습니다 (' + r.status + ').');
+    return r.json();
+  }).then(function(d){
+    try { sessionStorage.setItem('espejo.admin', codigo); } catch (e) {}
+    datos = d.leads || [];
+    document.getElementById('login').hidden = true;
+    document.getElementById('lista').hidden = false;
+    document.getElementById('cuenta').textContent = '총 ' + datos.length + '명';
+    document.getElementById('tb').innerHTML = datos.map(function(l){
+      return '<tr><td>' + esc(l.email) + '</td><td class="n">' + esc(l.idioma) + '</td><td class="n">' + esc(hora(l.creado)) +
+        '</td><td><button class="x" data-id="' + l.id + '" data-email="' + esc(l.email) + '">삭제</button></td></tr>';
+    }).join('') || '<tr><td colspan="4" class="n">아직 없습니다.</td></tr>';
+  });
+}
+document.getElementById('f').addEventListener('submit', function(ev){
+  ev.preventDefault(); codigo = document.getElementById('code').value.trim();
+  document.getElementById('err').hidden = true;
+  cargar().catch(function(e){ error(e.message); });
+});
+document.getElementById('salir').addEventListener('click', function(){
+  try { sessionStorage.removeItem('espejo.admin'); } catch (e) {}
+  location.reload();
+});
+document.getElementById('csv').addEventListener('click', function(){
+  var filas = [['email','idioma','creado']].concat(datos.map(function(l){ return [l.email, l.idioma, l.creado]; }));
+  var csv = filas.map(function(f){ return f.map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\\r\\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\\ufeff' + csv], { type:'text/csv;charset=utf-8' }));
+  a.download = 'espejo-leads-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+});
+document.getElementById('tb').addEventListener('click', function(ev){
+  var b = ev.target.closest('button.x'); if (!b) return;
+  if (!confirm(b.getAttribute('data-email') + ' 을(를) 명단에서 삭제할까요? 되돌릴 수 없습니다.')) return;
+  pedir('/api/admin/borrar', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ id: Number(b.getAttribute('data-id')) }) })
+    .then(function(r){ if (!r.ok) throw new Error('삭제하지 못했습니다 (' + r.status + ').'); return cargar(); })
+    .catch(function(e){ alert(e.message); });
+});
+if (codigo) cargar().catch(function(){ codigo = ''; });
+</script></main></body></html>`;
 
 export default {
   async fetch(request, env) {
@@ -119,6 +235,35 @@ export default {
         return json({ error: 'envio', detalle: String(e.message || e).slice(0, 200) }, 502);
       }
       /* Nada que guardar: el informe ya voló y de él no queda copia. */
+      return json({ ok: true });
+    }
+
+    /* ---------------------------------------------------------- admin */
+    if (url.pathname === '/admin') {
+      if (!env.ADMIN_CODE) return new Response('Not found', { status: 404 });
+      return new Response(ADMIN_HTML, {
+        headers: {
+          'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
+          'x-robots-tag': 'noindex', 'referrer-policy': 'no-referrer'
+        }
+      });
+    }
+    if (url.pathname === '/api/admin/leads') {
+      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      const { results } = await env.espejo_leads.prepare(
+        'SELECT id, email, idioma, creado FROM leads ORDER BY creado DESC'
+      ).all();
+      return json({ leads: results });
+    }
+    if (url.pathname === '/api/admin/borrar') {
+      if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+      if (!mismoOrigen(request, url)) return json({ error: 'origen' }, 403);
+      if (!(await autorizado(request, env))) return json({ error: 'no_autorizado' }, 401);
+      let cuerpo;
+      try { cuerpo = await request.json(); } catch { return json({ error: 'json' }, 400); }
+      const id = Number(cuerpo.id);
+      if (!Number.isInteger(id) || id <= 0) return json({ error: 'id' }, 400);
+      await env.espejo_leads.prepare('DELETE FROM leads WHERE id = ?').bind(id).run();
       return json({ ok: true });
     }
 

@@ -370,6 +370,7 @@
       es: 'Cinco productos de Lococo elegidos según lo que hemos medido. Arriba, lo que más necesita tu piel; debajo, qué hace cada producto.',
       en: 'Five steps picked from the Lococo range based on what was measured. First the ' +
           'priorities with the figure behind each one; then what each step covers.', ko: "측정 결과를 바탕으로 Lococo 재고에서 고른 5단계입니다. 먼저 우선순위와 그 근거 수치, 그다음 각 단계가 무엇을 담당하는지." },
+    'inf.verProducto': { es: 'Ver producto', en: 'View product', ko: "제품 보러가기" },
     'inf.prodPrio': { es: 'Prioridades detectadas', en: 'Detected priorities', ko: "감지된 우선순위" },
     'inf.cubre':    { es: 'Cubre', en: 'Covers', ko: "담당" },
     'inf.prodNota': {
