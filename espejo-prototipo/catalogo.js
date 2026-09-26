@@ -30,10 +30,10 @@
   ];
 
     /* h = handle de la ficha en lococo.beauty (tienda Shopify). Sólo lo llevan
-     los productos que se venden online (32 de 97, cruzado con products.json
+     los productos que se venden online (32 de los 97 del pedido del puesto, más 18 que sólo están en la tienda, cruzado con products.json
      el 2026-09-26 comprobando marca y nombre a mano). Sin h, el informe no
      enlaza: una búsqueda que no encuentra nada es peor que no enlazar.
-     Round Lab Dokdo Toner enlaza al formato de 200 ml, que es el de la web. */
+     */
 var PRODUCTOS = [
   { b:"AXIS-Y", n:"Dark Spot Correcting Glow Cream 50ml", s:"hidratante", p:"23.90", m:["Brightening & Glow"] },
   { b:"Anua", n:"Heartleaf 70% Daily Lotion 200ml", s:"hidratante", p:"25.90", m:["Calm & Redness"] },
@@ -129,9 +129,29 @@ var PRODUCTOS = [
   { b:"Medicube", n:"Kojic Acid Turmeric Brightening Gel Mask (1 sheet)", s:"tonico", p:"3.90", m:["Brightening & Glow"] },
   { b:"Medicube", n:"PDRN Pink Collagen Gel Mask (1 sheet)", s:"tonico", p:"2.90", m:["Youth & Firmness"], i:"PDRN", h:"medicube-pdrn-pink-collagen-gel-mask-1-sheet" },
   { b:"Medicube", n:"PDRN pink caffeine night wrapping mask 75ml", s:"tonico", p:"30.90", m:["Youth & Firmness"], i:"PDRN" },
-  { b:"Round Lab", n:"1025 DOKDO TONER_500ml", s:"tonico", p:"19.90", m:["Hydration Boost"], h:"round-lab-1025-dokdo-toner-200ml-1" },
+  { b:"Round Lab", n:"1025 DOKDO TONER_500ml", s:"tonico", p:"19.90", m:["Hydration Boost"], h:"round-lab-1025-dokdo-toner_500ml" },
   { b:"TOCOBO", n:"Vita Glazed Lip Mask 20ml", s:"tonico", p:"15.90", m:["Hydration Boost"] },
-  { b:"VT Cosmetics", n:"VT Spot Patch 48ea", s:"tonico", p:"8.90", m:["Clear & Acne-Free"] }
+  { b:"VT Cosmetics", n:"VT Spot Patch 48ea", s:"tonico", p:"8.90", m:["Clear & Acne-Free"] },
+  /* Sólo en la tienda online (no en el pedido del puesto). Clasificados a mano
+     el 2026-09-26: la tienda no tiene tipo ni etiquetas en estos productos. */
+  { b:"Round Lab", n:"Birch Juice Sun Cream 50ml", s:"proteccion", p:"15.90", m:["Hydration Boost"], h:"round-lab-birch-juice-sun-cream-50ml" },
+  { b:"Purito SEOUL", n:"Wonder Releaf Centella Daily Sun Lotion 60ml", s:"proteccion", p:"13.90", m:["Calm & Redness"], i:"Centella Asiática (Cica)", h:"purito-seoul-wonder-releaf-centella-daily-sun-lotion-60ml" },
+  { b:"Round Lab", n:"Birch Juice Cleanser 150ml", s:"limpiador", p:"11.90", m:["Hydration Boost"], h:"round-lab-birch-juice-cleanser-150ml-1" },
+  { b:"Ma:nyo", n:"Pure&Deep Cleansing Foam 100ml", s:"limpiador", p:"11.90", m:["Pore Control"], h:"ma-nyo-pure-deep-cleansing-foam-100ml" },
+  { b:"Aromatica", n:"Tea Tree Purifying Tonic", s:"tonico", p:"11.90", m:["Clear & Acne-Free", "Pore Control"], h:"aromatica-tea-tree-purifying-tonic" },
+  { b:"COSRX", n:"The 6 Peptide Skin Booster Serum 150ml", s:"tonico", p:"17.90", m:["Youth & Firmness", "Hydration Boost"], i:"Péptidos", h:"cosrx-the-6-peptide-skin-booster-serum-150ml" },
+  { b:"Ongredients", n:"Skin Barrier Calming Lotion 150ml", s:"hidratante", p:"15.90", m:["Calm & Redness", "Hydration Boost"], h:"ongredients-skin-barrier-calming-lotion-150ml" },
+  { b:"VT Cosmetics", n:"Pdrn Capsule Cream 100 50ml", s:"hidratante", p:"19.90", m:["Youth & Firmness", "Hydration Boost"], i:"PDRN", h:"vt-cosmetics-pdrn-capsule-cream-100-50ml" },
+  { b:"COSRX", n:"Advanced Snail 92 All In One Cream Tube 100ml", s:"hidratante", p:"18.90", m:["Hydration Boost", "Calm & Redness"], h:"cosrx-advanced-snail-92-all-in-one-cream-tube-100ml" },
+  { b:"Anua", n:"Niacinamide 10 + TXA 4% Serum 30ml", s:"serum", p:"17.90", m:["Brightening & Glow", "Clear & Acne-Free"], i:"Niacinamida", h:"anua-niacinamide-10-txa-4-serum-30ml" },
+  { b:"Purito SEOUL", n:"TXA 6 Niacinamide 10 Retinal Serum 30ml", s:"serum", p:"15.90", m:["Brightening & Glow", "Youth & Firmness"], i:"Niacinamida, Retinoides & Bakuchiol", h:"purito-seoul-txa-6-niacinamide-10-retinal-serum-30ml-1" },
+  { b:"Purito SEOUL", n:"Multi PDRN Collagen EGF Serum 30ml", s:"serum", p:"15.90", m:["Youth & Firmness", "Hydration Boost"], i:"PDRN, Péptidos", h:"purito-seoul-multi-pdrn-collagen-egf-serum-30ml" },
+  { b:"Purito SEOUL", n:"Retinol Retinal 2000 NAD+ Serum 30ml", s:"serum", p:"16.90", m:["Youth & Firmness", "Pore Control"], i:"Retinoides & Bakuchiol", h:"purito-seoul-retinol-retinal-2000-nad-serum-30ml" },
+  { b:"Celimax", n:"VITA-A Retinol Shot Tightening Serum 30ml", s:"serum", p:"18.90", m:["Youth & Firmness", "Pore Control"], i:"Retinoides & Bakuchiol", h:"celimax-vita-a-retinol-shot-tightening-serum-30ml" },
+  { b:"VT Cosmetics", n:"Collagen Reedle Shot 100 50ml", s:"serum", p:"28.90", m:["Youth & Firmness", "Pore Control"], h:"vt-cosmetics-collagen-reedle-shot-100" },
+  { b:"VT Cosmetics", n:"PDRN Reedle Glow Ampoule 100ml", s:"serum", p:"18.90", m:["Brightening & Glow", "Hydration Boost"], i:"PDRN", h:"vt-cosmetics-pdrn-reedle-glow-ampoule-100ml" },
+  { b:"Sungboon Editor", n:"Green Tomato NMN Pore Minimizing Ampoule 40ml", s:"serum", p:"11.90", m:["Pore Control"], h:"sungboon-editor-green-tomato-nmn-pore-minimizing-ampoule-40ml" },
+  { b:"Sungboon Editor", n:"Silk Peptide EGF Intensive Ampoule 40ml", s:"serum", p:"18.90", m:["Youth & Firmness"], i:"Péptidos", h:"sungboon-editor-silk-peptide-egf-intensive-ampoule-40ml" },
   ];
 
   /* --------------------------------------------------------- PRIORIDADES
