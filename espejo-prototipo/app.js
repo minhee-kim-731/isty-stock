@@ -181,6 +181,13 @@
        ejemplo sobre un rostro sintético. No guarda nada ni envía nada. */
     /* «admin» lleva a la página de gestión (el código se pide allí). */
     if (/^admin$/i.test(email)) { campo.value = ''; window.location.href = '/admin'; return; }
+    /* «encuesta»: se salta sólo la cámara (rostro sintético) y se hace el
+       cuestionario de verdad, con la pausa y el informe. Tampoco se guarda. */
+    if (/^encuesta(@\S*)?$/i.test(email)) {
+      campo.value = '';
+      window.ESPEJO_CUESTIONARIO();
+      return;
+    }
     if (/^(test|prueba)(@\S*)?$/i.test(email)) {
       campo.value = '';
       window.ESPEJO_DEMO();
@@ -1720,6 +1727,17 @@
     x.putImageData(d, 0, 0);
     return c;
   }
+
+  window.ESPEJO_CUESTIONARIO = function () {
+    S.ctx.clearRect(0, 0, E.CANVAS_W, E.CANVAS_H);
+    S.ctx.drawImage(rostroSintetico(), 0, 0, E.CANVAS_W, E.CANVAS_H);
+    S.condiciones = E.evaluarEncuadre(S.ctx);
+    S.modoFoto = 'prevista';            // no se registra (ver guardarAnalisis)
+    S.optico = E.analizar(S.lienzo);
+    S.respuestas = []; S.qIndex = 0; S.revelando = false;
+    irA(F_CUEST);
+    pintarPregunta();
+  };
 
   window.ESPEJO_DEMO = function (fuente, respuestas) {
     S.ctx.clearRect(0, 0, E.CANVAS_W, E.CANVAS_H);
