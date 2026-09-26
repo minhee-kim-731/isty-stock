@@ -679,6 +679,9 @@
      aquí en vez de borrarlas: volver a mostrarlas es cambiar un valor. */
   var MOSTRAR_LUPA = false;
   var MOSTRAR_CUESTIONARIO = false;
+  var MOSTRAR_SESION = false;       // «Condiciones de la sesión» (2026-09-26)
+  var MOSTRAR_LEGAL = false;        // aviso legal al pie del informe (2026-09-26)
+  var MAX_EVITAR = 3;               // «Mejor evitar»: sólo los más relevantes
 
   /* Enlace a la ficha del producto en la tienda (lococo.beauty, Shopify).
      Sólo si el catálogo trae su handle (`h`): los que no se venden online
@@ -1093,7 +1096,7 @@
     /* --- 06 Evitar -------------------------------------------------- */
     H.push(sec('08', T('inf.s6'), ''));
     H.push('<ul class="evitar">');
-    rec.evitar.forEach(function (e) { H.push('<li>' + esc(TX(e)) + '</li>'); });
+    rec.evitar.slice(0, MAX_EVITAR).forEach(function (e) { H.push('<li>' + esc(TX(e)) + '</li>'); });
     H.push('</ul></div>');
 
     /* --- 07 Método -------------------------------------------------- */
@@ -1209,6 +1212,7 @@
     H.push('</div>');
 
     /* --- 08 Condiciones --------------------------------------------- */
+    if (MOSTRAR_SESION) {
     H.push(sec('10', T('inf.s8'), T('inf.s8der')));
     H.push('<div class="conf-grid"><div style="text-align:center">' +
       '<div class="conf-num">' + res.confianza + '</div>' +
@@ -1240,10 +1244,13 @@
         '<span class="v">' + esc(r[1]) + '</span></div>');
     });
     H.push('</div></div>');
+    }
 
     /* --- Legal + evento --------------------------------------------- */
-    H.push('<div class="legal">' + T('legal') +
-      '<br><a class="enlace-priv" href="/privacidad" target="_blank" rel="noopener">' + T('priv.enlace') + '</a></div>');
+    if (MOSTRAR_LEGAL) {
+      H.push('<div class="legal">' + T('legal') +
+        '<br><a class="enlace-priv" href="/privacidad" target="_blank" rel="noopener">' + T('priv.enlace') + '</a></div>');
+    }
 
     H.push('<div class="evento"><div>' +
       '<p class="eyebrow">' + T('evento.eyebrow') + '</p>' +

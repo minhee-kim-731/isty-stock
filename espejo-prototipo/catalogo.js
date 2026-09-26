@@ -198,10 +198,19 @@ var PRODUCTOS = [
 
   /* Un producto puntúa por cuánto cubre las metas prioritarias. El empate se
      rompe por precio y luego por nombre: nunca al azar. */
+  /* Sólo se recomienda lo que se vende en lococo.beauty (con handle `h`),
+     para que cada paso enlace a su ficha (Lococo, 2026-09-26). Si una ranura
+     se quedara sin productos de la tienda, se vuelve al catálogo completo. */
+  var SOLO_TIENDA = true;
+
   function elegir(ranura, prio, usados, servidas) {
     var candidatos = PRODUCTOS.filter(function (p) {
       return p.s === ranura && usados.indexOf(p.b + p.n) < 0;
     });
+    if (SOLO_TIENDA) {
+      var enTienda = candidatos.filter(function (p) { return !!p.h; });
+      if (enTienda.length) candidatos = enTienda;
+    }
     if (!candidatos.length) return null;
 
     var puntuados = candidatos.map(function (p) {

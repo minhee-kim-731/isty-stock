@@ -159,6 +159,11 @@ npx wrangler secret put ADMIN_CODE      # 새 코드 입력 → 바로 적용
 (Baumann 4축 각 1문항 + 수분). 빠진 문항은 카메라가 이미 재는 것(유분·붉은기·색소)을 다시 묻던 것들이다.
 **수분 문항은 빼지 말 것** — 카메라로는 원리상 못 잰다. 13문항으로 되돌리려면 `ACTIVAS`만 고치면 된다.
 
+## 결과지에서 숨긴 것 (2026-09-26)
+
+`app.js` 상단 플래그: `MOSTRAR_LUPA`(확대 분석), `MOSTRAR_CUESTIONARIO`(문진 프로필), `MOSTRAR_SESION`(세션 조건),
+`MOSTRAR_LEGAL`(하단 의료·데이터 고지). 모두 `false`. "Mejor evitar"는 `MAX_EVITAR = 3` 개까지만.
+
 ## 확대 분석 (결과지 03) — 2026-09-26부터 숨김
 
 Lococo 요청으로 결과지와 메일에서 뺐다. `app.js` 의 `MOSTRAR_LUPA = true` 로 되돌린다.
@@ -190,6 +195,8 @@ Lococo 요청으로 결과지와 메일에서 뺐다. `app.js` 의 `MOSTRAR_LUPA
 - 이미 커버된 목표는 다음 슬롯에서 가중치가 0.4배로 내려간다. 이게 없으면 지배적인 목표
   하나가 5단계를 전부 먹어서 같은 태그가 다섯 번 반복된다.
 - 재고가 바뀌면 `catalogo.js`의 `PRODUCTOS` 배열만 교체하면 된다.
+- **쇼핑몰(lococo.beauty)에 있는 제품만 추천한다**(`catalogo.js` 의 `SOLO_TIENDA = true`). 그래야 5개 모두 링크가 달린다.
+  자외선차단은 쇼핑몰에 1개뿐이라 항상 같은 제품이 나온다. 쇼핑몰 상품이 늘면 `h` 만 추가하면 된다.
 - 각 제품의 **"Ver producto"** 링크는 쇼핑몰 상세페이지(`lococo.beauty/products/<handle>`)로 간다.
   handle은 `catalogo.js` 의 `h` 필드. 2026-09-26 `products.json` 과 대조해서 **97개 중 32개**만 온라인에
   있었고, 나머지는 링크를 숨긴다. 쇼핑몰에 상품이 추가되면 해당 줄에 `h:"handle"` 만 넣으면 된다.
