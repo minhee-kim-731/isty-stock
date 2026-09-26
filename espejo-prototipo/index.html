@@ -640,6 +640,9 @@ details.metodo summary{ font-size:13px; }
 .prod-link{ display:inline-block; margin-top:10px; font-size:13px; font-weight:600; color:var(--accent); text-decoration:none; }
 .prod-link:hover{ text-decoration:underline; }
 @media print{ .prod-link{ display:none; } }
+
+.enlace-priv{ color:var(--ink-2); text-decoration:underline; text-underline-offset:2px; }
+.enlace-priv:hover{ color:var(--accent); }
 </style>
 
 <div class="hud">
@@ -706,9 +709,9 @@ details.metodo summary{ font-size:13px; }
           <div class="aviso brk" style="margin-top:22px">
             <p class="eyebrow" data-i18n="intro.privTitulo">Privacidad</p>
             <p class="small" style="margin-top:8px" data-i18n="intro.priv">
-              La foto se procesa en esta tableta y no se guarda. Si nos dejas tu nombre y tu correo, los
-              guardamos junto con los resultados del análisis.
+              La foto se procesa en esta tableta y no se guarda.
             </p>
+            <p class="tiny" style="margin-top:10px"><a class="enlace-priv" href="/privacidad" target="_blank" rel="noopener" data-i18n="priv.enlace">Política de privacidad</a></p>
           </div>
         </div>
       </div>
@@ -724,9 +727,6 @@ details.metodo summary{ font-size:13px; }
       </p>
 
       <div class="cor-caja brk">
-        <label class="cor-etq" for="nombre" data-i18n="cor.nombre">Nombre</label>
-        <input type="text" id="nombre" class="cor-input" autocomplete="name" maxlength="80"
-               spellcheck="false" style="margin-bottom:16px">
         <label class="cor-etq" for="correo" data-i18n="cor.etiqueta">Correo electrónico</label>
         <input type="email" id="correo" class="cor-input" autocomplete="email"
                inputmode="email" spellcheck="false" placeholder="nombre@correo.com">
@@ -752,13 +752,6 @@ details.metodo summary{ font-size:13px; }
         </div>
       </div>
 
-      <div class="aviso" style="margin-top:22px">
-        <p class="eyebrow" id="cor-datos-tit" data-i18n="cor.datosTitulo">Qué se guarda y qué no</p>
-        <p class="small" style="margin-top:8px" id="cor-datos" data-i18n="cor.datos">
-          Guardamos tu nombre y tu correo junto con los resultados, pero no la foto. Novedades solo si marcas la
-          casilla. Para borrar tus datos: sales@lococo.beauty.
-        </p>
-      </div>
     </section>
 
     <!-- ========================================================== CAPTURA -->

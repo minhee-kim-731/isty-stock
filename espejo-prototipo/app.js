@@ -147,7 +147,6 @@
        de apoyo no promete plazo de entrega. */
     $('cor-h2').setAttribute('data-i18n', 'cor.h2Envio');
     $('cor-lede').setAttribute('data-i18n', env ? 'cor.ledeEnvio' : 'cor.ledeSinEnvio');
-    $('cor-datos').setAttribute('data-i18n', env ? 'cor.datosEnvio' : 'cor.datos');
     $('cor-check-salud').hidden = !env;
     /* Sin envío, el correo solo sirve para marketing y tiene que poder
        omitirse: exigirlo convertiría el análisis en un peaje por la publicidad.
@@ -181,7 +180,9 @@
     /* Atajo de pruebas para el equipo: con «test» o «prueba» en el campo de
        correo se salta la cámara y el cuestionario y se abre un informe de
        ejemplo sobre un rostro sintético. No guarda nada ni envía nada. */
-    if (/^(test|prueba)$/i.test(email)) {
+    /* «admin» lleva a la página de gestión (el código se pide allí). */
+    if (/^admin$/i.test(email)) { campo.value = ''; window.location.href = '/admin'; return; }
+    if (/^(test|prueba)(@\S*)?$/i.test(email)) {
       campo.value = '';
       window.ESPEJO_DEMO();
       return;
@@ -197,7 +198,6 @@
     /* La casilla de marketing nunca bloquea: sin ella el correo simplemente
        no se guarda para novedades y el análisis sigue igual. */
     S.correo = email;
-    S.nombre = ($('nombre').value || '').trim().slice(0, 80);
     S.consintioSalud = S.puedeEnviar && $('cor-consent-salud').checked;
 
     var boton = $('btn-correo-ok');
@@ -213,18 +213,18 @@
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        email: email, nombre: S.nombre, idioma: I.idioma(), sesion: S.sesionId, consentimiento: consiente
+        email: email, idioma: I.idioma(), sesion: S.sesionId, consentimiento: consiente
       })
     }).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); });
 
     alta.then(function () {
-      campo.value = ''; $('nombre').value = '';
+      campo.value = '';
       irACaptura();
     }).catch(function () {
       /* Si falla el alta de marketing no se retiene a nadie: el correo ya
          está guardado en memoria para el envío del informe, que es lo que
          la persona vino a pedir. */
-      campo.value = ''; $('nombre').value = '';
+      campo.value = '';
       irACaptura();
     });
   }
@@ -1245,7 +1245,8 @@
     H.push('</div></div>');
 
     /* --- Legal + evento --------------------------------------------- */
-    H.push('<div class="legal">' + T('legal') + '</div>');
+    H.push('<div class="legal">' + T('legal') +
+      '<br><a class="enlace-priv" href="/privacidad" target="_blank" rel="noopener">' + T('priv.enlace') + '</a></div>');
 
     H.push('<div class="evento"><div>' +
       '<p class="eyebrow">' + T('evento.eyebrow') + '</p>' +
@@ -1440,8 +1441,9 @@
   /* Se dispara una vez, al terminar el informe. No bloquea: quien está
      delante ya tiene sus resultados en pantalla. */
   /* Registro del análisis (2026-09-26, a petición de Lococo): resultados
-     junto con el nombre y el correo que la persona haya dejado en el paso 2
-     (si los dejó). Nunca la foto. Los textos de privacidad lo dicen así.
+     junto con el correo que la persona haya dejado en el paso 2 (si lo
+     dejó). Nunca la foto. Se explica en /privacidad, enlazada desde la
+     portada y desde el pie del informe.
      El informe de ejemplo («test») no se registra. Un fallo aquí no afecta
      al visitante. */
   function guardarAnalisis(res, perfil, rut) {
@@ -1460,8 +1462,7 @@
       }),
       respuestas: S.respuestas.slice(),
       productos: rut && rut.pasos ? rut.pasos.map(function (p) { return p.producto.b + ' · ' + p.producto.n; }) : [],
-      email: S.correo || null,
-      nombre: S.nombre || null
+      email: S.correo || null
     };
     fetch('/api/analisis', {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(datos)
@@ -1532,8 +1533,7 @@
     $('correo').value = '';
     $('cor-consent').checked = false;
     $('cor-consent-salud').checked = false;
-    $('nombre').value = '';
-    S.correo = null; S.nombre = ''; S.consintioSalud = false;
+    S.correo = null; S.consintioSalud = false;
     S.analisisGuardado = false;
     $('video').hidden = false;
     S.inicio = new Date();
