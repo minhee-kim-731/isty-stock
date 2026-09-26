@@ -493,10 +493,15 @@
     $('prog').style.width = (4 + 96 * (i + 1) / S.optico.pasos.length) + '%';
   }
 
+  /* Ritmo de lectura del análisis: 7 pasos × 1,1 s ≈ 8 s. El cálculo ya está
+     hecho de antemano; esto es sólo el tiempo que se da para leerlo (Lococo,
+     2026-09-26: con 230 ms el paso duraba 2 s y parecía que no hacía nada). */
+  var PASO_MS = 1100;
+
   function bucleRevelado(ts) {
     if (!S.revelando || !S.optico) return;
     if (!S.tPaso) S.tPaso = ts;
-    if (ts - S.tPaso >= 230) {
+    if (ts - S.tPaso >= PASO_MS) {
       S.tPaso = ts;
       if (S.revelado < S.optico.pasos.length) {
         pintarPaso(S.revelado); S.revelado++;

@@ -25,7 +25,7 @@
       ayuda: { es: 'Responde pensando en un día normal, no después de un tratamiento.',
                en: 'Answer for an ordinary day, not after a treatment.', ko: "시술 직후가 아니라 평범한 날을 기준으로 답해주세요." },
       ops: [
-        { t: { es: 'Tirante y áspera, incluso con descamación', en: 'Tight and rough, even flaking', ko: "당기고 거칠며 각질까지 일어남" }, v: -2 },
+        { t: { es: 'Tirante y áspera', en: 'Tight and rough', ko: "당기고 거침" }, v: -2 },
         { t: { es: 'Algo tirante pero cómoda', en: 'Slightly tight but comfortable', ko: "약간 당기지만 편안함" }, v: -1 },
         { t: { es: 'Normal, sin sensación particular', en: 'Normal, nothing in particular', ko: "보통, 특별한 느낌 없음" }, v: 0 },
         { t: { es: 'Con brillo en frente y nariz', en: 'Shiny on forehead and nose', ko: "이마와 코에 유분기" }, v: 1 },
@@ -122,15 +122,15 @@
       ] },
 
     { eje: 'WT',
-      texto: { es: '¿Ves líneas en tu cara cuando la tienes completamente relajada?',
-               en: 'Do you see lines on your face when it is completely relaxed?', ko: "표정을 완전히 풀었을 때 얼굴에 선이 보이나요?" },
-      ayuda: { es: 'Sin gesticular: frente lisa, ojos abiertos con normalidad.',
-               en: 'No expression: smooth forehead, eyes normally open.', ko: "표정 없이 — 이마를 펴고 눈을 평소대로 뜬 상태에서요." },
+      texto: { es: '¿Tienes arrugas o líneas finas?',
+               en: 'Do you have wrinkles or fine lines?', ko: "주름이나 잔주름이 있나요?" },
+      ayuda: { es: 'Piensa en la frente, el entrecejo y alrededor de los ojos.',
+               en: 'Think of the forehead, between the brows and around the eyes.', ko: "이마, 미간, 눈가 등을 떠올려 보세요." },
       ops: [
-        { t: { es: 'Sí, varias y marcadas', en: 'Yes, several and pronounced', ko: "네, 여러 개가 뚜렷합니다" }, v: -2 },
-        { t: { es: 'Alguna línea fina', en: 'A fine line or two', ko: "가는 선이 한두 개" }, v: -1 },
-        { t: { es: 'Sólo al gesticular', en: 'Only when I make expressions', ko: "표정을 지을 때만" }, v: 1 },
-        { t: { es: 'Ninguna', en: 'None', ko: "없음" }, v: 2 }
+        { t: { es: 'Sí, varias y marcadas', en: 'Yes, several and pronounced', ko: "네, 여러 개가 뚜렷해요" }, v: -2 },
+        { t: { es: 'Algunas líneas finas', en: 'Some fine lines', ko: "가는 주름이 조금 있어요" }, v: -1 },
+        { t: { es: 'Sólo cuando sonrío o frunzo el ceño', en: 'Only when I smile or frown', ko: "웃거나 찡그릴 때만 생겨요" }, v: 1 },
+        { t: { es: 'Ninguna', en: 'None', ko: "없어요" }, v: 2 }
       ] },
     { eje: 'WT',
       texto: { es: '¿Cuántos años acumulas de exposición solar regular sin protección diaria?',
@@ -156,15 +156,15 @@
 
     /* Hidratación — no medible ópticamente, se declara como autoinforme. */
     { eje: 'HID',
-      texto: { es: '¿Notas la piel tirante al gesticular o sonreír?',
-               en: 'Does your skin feel tight when you smile or make expressions?', ko: "웃거나 표정을 지을 때 피부가 당기나요?" },
-      ayuda: { es: 'Este eje no se puede medir con cámara: requiere corneometría.',
-               en: 'This axis cannot be measured by camera: it requires corneometry.', ko: "이 축은 카메라로 측정할 수 없습니다 — 코니오메트리가 필요합니다." },
+      texto: { es: '¿Sientes la piel seca o tirante durante el día?',
+               en: 'Does your skin feel dry or tight during the day?', ko: "낮 동안 피부가 건조하거나 당기나요?" },
+      ayuda: { es: 'Por ejemplo, si te apetece volver a ponerte crema a media tarde.',
+               en: 'For example, if you feel like reapplying cream in the afternoon.', ko: "예를 들어 중간에 크림을 다시 바르고 싶어지는 경우요." },
       ops: [
-        { t: { es: 'Constantemente', en: 'Constantly', ko: "늘 그렇습니다" }, v: -2 },
-        { t: { es: 'En invierno o con aire acondicionado', en: 'In winter or with air conditioning', ko: "겨울이나 에어컨 환경에서" }, v: -1 },
-        { t: { es: 'Rara vez', en: 'Rarely', ko: "드물게" }, v: 1 },
-        { t: { es: 'Nunca', en: 'Never', ko: "전혀 없음" }, v: 2 }
+        { t: { es: 'Casi siempre', en: 'Almost always', ko: "거의 항상" }, v: -2 },
+        { t: { es: 'En invierno o con aire acondicionado', en: 'In winter or with air conditioning', ko: "겨울이나 에어컨 바람에" }, v: -1 },
+        { t: { es: 'Rara vez', en: 'Rarely', ko: "가끔" }, v: 1 },
+        { t: { es: 'Nunca', en: 'Never', ko: "전혀요" }, v: 2 }
       ] }
   ];
 

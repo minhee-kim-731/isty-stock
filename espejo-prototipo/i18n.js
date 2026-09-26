@@ -255,7 +255,7 @@
 
     /* --- Cuestionario ------------------------------------------------- */
     'cue.eyebrow': { es: 'Paso 5 de 6', en: 'Step 04 · Clinical questionnaire', ko: "05단계 · 임상 문진" },
-    'cue.h2':      { es: 'Lo que la cámara no ve', en: 'What the camera cannot see', ko: "카메라가 보지 못하는 것" },
+    'cue.h2':      { es: 'Cuéntanos un poco más', en: 'Tell us a bit more', ko: "조금 더 자세히 알려주세요" },
     'cue.lede': {
       es: 'Cinco preguntas rápidas sobre cómo se comporta tu piel. Piensa en cómo está normalmente, no solo hoy.',
       en: 'Five questions about what the camera cannot see: how your skin behaves, how it ' +
