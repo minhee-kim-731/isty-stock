@@ -500,10 +500,11 @@
     $('prog').style.width = (4 + 96 * (i + 1) / S.optico.pasos.length) + '%';
   }
 
-  /* Ritmo de lectura del análisis: 7 pasos × 1,1 s ≈ 8 s. El cálculo ya está
-     hecho de antemano; esto es sólo el tiempo que se da para leerlo (Lococo,
-     2026-09-26: con 230 ms el paso duraba 2 s y parecía que no hacía nada). */
-  var PASO_MS = 1100;
+  /* Ritmo de lectura del análisis y de la pausa previa al informe: 0,8 s por
+     paso (≈ 6 s el análisis, ≈ 3 s la pausa). El cálculo ya está hecho de
+     antemano; esto es sólo el tiempo que se da para leerlo. Lococo, 2026-09-26:
+     230 ms parecía que no hacía nada; 1,1 s se hacía largo. */
+  var PASO_MS = 800;
 
   function bucleRevelado(ts) {
     if (!S.revelando || !S.optico) return;
