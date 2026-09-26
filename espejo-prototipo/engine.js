@@ -224,6 +224,11 @@
      condiciones que se controlan en fotografía clínica estandarizada.      */
 
   var frameAnterior = null;
+  /* Suavizado entre fotogramas (2026-09-26). Los dos indicadores más
+     nerviosos se juzgan sobre una media corta, no sobre el fotograma suelto:
+     una lectura aislada que roza el umbral no debe suspender la prueba. */
+  var desequilibrioSuave = null, historialMov = [];
+  var UMBRAL_DESEQ = 0.22, UMBRAL_MOV = 6.0;
 
   function evaluarEncuadre(ctx) {
     var W = 192, H = 256;
@@ -255,7 +260,11 @@
        iluminada, y el fondo diluía una luz lateral real sobre la cara: la
        prueba fallaba cuando no debía y pasaba cuando no debía. */
     var esPiel = new Uint8Array(W * H), nPiel = 0, sumX = 0;
-    for (y = ry0; y < ry1; y++) {
+    /* Sólo la franja de pómulos y nariz (35–80 % del alto del retículo):
+       frente y barbilla meten flequillo, sombra del pelo y cuello, que
+       desequilibran izquierda/derecha sin que la luz sea lateral. */
+    var fy0 = ry0 + Math.round((ry1 - ry0) * 0.35), fy1 = ry0 + Math.round((ry1 - ry0) * 0.80);
+    for (y = fy0; y < fy1; y++) {
       for (x = rx0; x < rx1; x++) {
         var op = (((y * sy) | 0) * CANVAS_W + ((x * sx) | 0)) * 4;
         var pr = px[op], pg = px[op + 1], pb = px[op + 2];
@@ -268,9 +277,9 @@
       }
     }
     var sumI = 0, nI = 0, sumD = 0, nD = 0, mitad;
-    if (nPiel > 400) {
+    if (nPiel > 250) {
       mitad = sumX / nPiel;
-      for (y = ry0; y < ry1; y++) for (x = rx0; x < rx1; x++) {
+      for (y = fy0; y < fy1; y++) for (x = rx0; x < rx1; x++) {
         if (!esPiel[y * W + x]) continue;
         if (x < mitad) { sumI += gris[y * W + x]; nI++; } else { sumD += gris[y * W + x]; nD++; }
       }
@@ -284,7 +293,10 @@
       }
     }
     var mI = sumI / nI, mD = sumD / nD;
-    var desequilibrio = Math.abs(mI - mD) / Math.max(1, (mI + mD) / 2);
+    var desequilibrioInst = Math.abs(mI - mD) / Math.max(1, (mI + mD) / 2);
+    desequilibrioSuave = desequilibrioSuave === null ? desequilibrioInst
+                       : desequilibrioSuave * 0.6 + desequilibrioInst * 0.4;
+    var desequilibrio = desequilibrioSuave;
 
     // 3 · Enfoque — varianza del laplaciano (Pech-Pacheco et al., 2000)
     var lapSum = 0, lapSq = 0, lapN = 0;
@@ -322,30 +334,51 @@
     var BW = W >> 3, BH = H >> 3, bloques = new Float32Array(BW * BH);
     for (y = 0; y < BH * 8; y++) for (x = 0; x < BW * 8; x++) bloques[(y >> 3) * BW + (x >> 3)] += gris[y * W + x];
     for (k = 0; k < bloques.length; k++) bloques[k] /= 64;
-    var movimiento = 1;
+    /* Normalización por el brillo medio del fotograma: la autoexposición
+       escala TODA la imagen (multiplica), así que los bloques claros cambian
+       más que los oscuros y restar una constante no basta. */
+    var mediaB = 0;
+    for (k = 0; k < bloques.length; k++) mediaB += bloques[k];
+    mediaB = Math.max(1, mediaB / bloques.length);
+    for (k = 0; k < bloques.length; k++) bloques[k] *= 128 / mediaB;
+    /* Se descuenta el cambio GLOBAL de brillo (mediana de las diferencias con
+       signo): la autoexposición de la cámara y el parpadeo de la luz de la
+       sala cambian todos los bloques a la vez sin que nadie se mueva, y eso
+       suspendía la prueba con la cara quieta. Lo que queda es movimiento. */
+    var movInst = 0;
     if (frameAnterior && frameAnterior.length === bloques.length) {
-      var difs = new Float32Array(bloques.length);
-      for (k = 0; k < bloques.length; k++) difs[k] = Math.abs(bloques[k] - frameAnterior[k]);
-      Array.prototype.sort.call(difs);
-      movimiento = difs[Math.floor(difs.length * 0.95)];
+      var dif = new Float32Array(bloques.length);
+      for (k = 0; k < bloques.length; k++) dif[k] = bloques[k] - frameAnterior[k];
+      var orden = Float32Array.from(dif); Array.prototype.sort.call(orden);
+      var global = orden[orden.length >> 1];
+      for (k = 0; k < dif.length; k++) dif[k] = Math.abs(dif[k] - global);
+      Array.prototype.sort.call(dif);
+      movInst = dif[Math.floor(dif.length * 0.95)];
+      historialMov.push(movInst);
+      if (historialMov.length > 3) historialMov.shift();
     }
     frameAnterior = bloques;
+    // Mediana de las tres últimas lecturas: un tirón suelto no cuenta; un
+    // movimiento sostenido, sí. Sin fotograma previo (foto subida, primer
+    // fotograma) no hay movimiento que medir: cuenta como quieto, como antes.
+    var movimiento = historialMov.length
+      ? Float32Array.from(historialMov).sort()[historialMov.length >> 1] : 0;
 
     return {
       exposicion:   { valor: lumMedia,      ok: lumMedia > 92 && lumMedia < 196,
                       texto: lumMedia.toFixed(0), unidad: 'cd·rel' },
-      uniformidad:  { valor: desequilibrio, ok: desequilibrio < 0.14,
+      uniformidad:  { valor: desequilibrio, ok: desequilibrio < UMBRAL_DESEQ,
                       texto: (desequilibrio * 100).toFixed(1), unidad: '% Δ L-R' },
       enfoque:      { valor: varLap,        ok: varLap > 34,
                       texto: varLap.toFixed(0), unidad: 'σ² lap' },
       encuadre:     { valor: fraccionPiel,  ok: fraccionPiel > 0.34 && fraccionPiel < 0.95,
                       texto: (fraccionPiel * 100).toFixed(0), unidad: '% área' },
-      estabilidad:  { valor: movimiento,    ok: movimiento < 3.2,
+      estabilidad:  { valor: movimiento,    ok: movimiento < UMBRAL_MOV,
                       texto: movimiento.toFixed(2), unidad: 'Δ/fot' }
     };
   }
 
-  function reiniciarEncuadre() { frameAnterior = null; }
+  function reiniciarEncuadre() { frameAnterior = null; desequilibrioSuave = null; historialMov = []; }
 
   /* ====================================================================== */
   /*                            ANÁLISIS COMPLETO                           */
