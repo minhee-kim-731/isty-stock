@@ -21,6 +21,8 @@
     'Youth & Firmness':  { es: 'Firmeza',        en: 'Firmness',    ko: '탄력' }
   };
 
+  /* Mascarillas y pads van en «mascarilla», que no es un paso de la rutina:
+     se quedan en el catálogo pero no se recomiendan (Lococo, 2026-09-26). */
   var RANURAS = [
     { id: 'limpiador',  nom: { es: 'Limpieza',         en: 'Cleanse',    ko: '클렌징' } },
     { id: 'tonico',     nom: { es: 'Tónico / esencia', en: 'Tone',       ko: '토너·에센스' } },
@@ -108,15 +110,15 @@ var PRODUCTOS = [
   { b:"Anua", n:"Pdrn Hyaluronic Acid Hydrating Capsule Mist 100ml", s:"tonico", p:"22.90", m:["Hydration Boost"], i:"PDRN", h:"anua-pdrn-hyaluronic-acid-hydrating-capsule-mist-100ml" },
   { b:"Beauty of Joseon", n:"Ginseng Essence Water 150ml", s:"tonico", p:"20.90", m:["Youth & Firmness"] },
   { b:"Beauty of Joseon", n:"Green plum refreshing toner : AHA + BHA 150ml", s:"tonico", p:"18.90", m:["Pore Control"] },
-  { b:"Beauty of Joseon", n:"Red Bean Refreshing Pore Mask 140ml", s:"tonico", p:"21.90", m:["Pore Control"] },
-  { b:"Biodance", n:"Bio-Collagen Real Deep Mask 34g (1ud)", s:"tonico", p:"2.90", m:["Youth & Firmness"], h:"biodance-bio-collagen-real-deep-mask-34g-1ud" },
-  { b:"Biodance", n:"Cera-Nol Gel Toner Pads (60 pads)", s:"tonico", p:"24.90", m:["Calm & Redness"], h:"biodance-cera-nol-gel-toner-pads-60-pads" },
-  { b:"Biodance", n:"Collagen Gel Toner Pads (60 pads)", s:"tonico", p:"24.90", m:["Youth & Firmness"], h:"biodance-collagen-gel-toner-pads-60-pads" },
-  { b:"Biodance", n:"Hydro Cera-nol Real Deep Mask 34g (1ud)", s:"tonico", p:"2.90", m:["Hydration Boost"], h:"biodance-hydro-cera-nol-real-deep-mask-34g-1ud" },
-  { b:"Biodance", n:"Sea Kelp Gel Toner Pads (60 pads)", s:"tonico", p:"24.90", m:["Pore Control"] },
+  { b:"Beauty of Joseon", n:"Red Bean Refreshing Pore Mask 140ml", s:"mascarilla", p:"21.90", m:["Pore Control"] },
+  { b:"Biodance", n:"Bio-Collagen Real Deep Mask 34g (1ud)", s:"mascarilla", p:"2.90", m:["Youth & Firmness"], h:"biodance-bio-collagen-real-deep-mask-34g-1ud" },
+  { b:"Biodance", n:"Cera-Nol Gel Toner Pads (60 pads)", s:"mascarilla", p:"24.90", m:["Calm & Redness"], h:"biodance-cera-nol-gel-toner-pads-60-pads" },
+  { b:"Biodance", n:"Collagen Gel Toner Pads (60 pads)", s:"mascarilla", p:"24.90", m:["Youth & Firmness"], h:"biodance-collagen-gel-toner-pads-60-pads" },
+  { b:"Biodance", n:"Hydro Cera-nol Real Deep Mask 34g (1ud)", s:"mascarilla", p:"2.90", m:["Hydration Boost"], h:"biodance-hydro-cera-nol-real-deep-mask-34g-1ud" },
+  { b:"Biodance", n:"Sea Kelp Gel Toner Pads (60 pads)", s:"mascarilla", p:"24.90", m:["Pore Control"] },
   { b:"COSRX", n:"Advanced Snail 96 Mucin Power Essence 100ml", s:"tonico", p:"17.90", m:["Hydration Boost"] },
   { b:"Celimax", n:"Dual Barrier Creamy Toner 150ml", s:"tonico", p:"23.90", m:["Calm & Redness"] },
-  { b:"Celimax", n:"Heartleaf BHA Peeling Pad (60 pads)", s:"tonico", p:"20.90", m:["Pore Control"] },
+  { b:"Celimax", n:"Heartleaf BHA Peeling Pad (60 pads)", s:"mascarilla", p:"20.90", m:["Pore Control"] },
   { b:"Dr. Althea", n:"345 Relief Cream Mist 100ml", s:"tonico", p:"21.90", m:["Calm & Redness"] },
   { b:"HaruHaru Wonder", n:"Black Rice Hyaluronic Toner 300ml", s:"tonico", p:"16.90", m:["Hydration Boost"], i:"Ácido Hialurónico" },
   { b:"HaruHaru Wonder", n:"Black Rice Probiotics Barrier 2% NAD+ Serum Mist 80ml", s:"tonico", p:"17.90", m:["Calm & Redness"] },
@@ -124,14 +126,14 @@ var PRODUCTOS = [
   { b:"I'm from", n:"Mugwort Essence 150ml", s:"tonico", p:"40.90", m:["Calm & Redness"] },
   { b:"I'm from", n:"Rice toner 150ml", s:"tonico", p:"25.90", m:["Brightening & Glow"], h:"im-from-rice-toner-150ml" },
   { b:"Isntree", n:"Green Tea Fresh Toner 200ml", s:"tonico", p:"17.90", m:["Calm & Redness"] },
-  { b:"Medicube", n:"Collagen Night Wrapping Mask 75ml", s:"tonico", p:"27.90", m:["Youth & Firmness"], h:"medicube-collagen-night-wrapping-mask-75ml" },
-  { b:"Medicube", n:"Deep vita c pad (70pcs)", s:"tonico", p:"27.90", m:["Brightening & Glow"], i:"Vitamina C" },
-  { b:"Medicube", n:"Kojic Acid Turmeric Brightening Gel Mask (1 sheet)", s:"tonico", p:"3.90", m:["Brightening & Glow"] },
-  { b:"Medicube", n:"PDRN Pink Collagen Gel Mask (1 sheet)", s:"tonico", p:"2.90", m:["Youth & Firmness"], i:"PDRN", h:"medicube-pdrn-pink-collagen-gel-mask-1-sheet" },
-  { b:"Medicube", n:"PDRN pink caffeine night wrapping mask 75ml", s:"tonico", p:"30.90", m:["Youth & Firmness"], i:"PDRN" },
-  { b:"Round Lab", n:"1025 DOKDO TONER_500ml", s:"tonico", p:"19.90", m:["Hydration Boost"], h:"round-lab-1025-dokdo-toner_500ml" },
-  { b:"TOCOBO", n:"Vita Glazed Lip Mask 20ml", s:"tonico", p:"15.90", m:["Hydration Boost"] },
-  { b:"VT Cosmetics", n:"VT Spot Patch 48ea", s:"tonico", p:"8.90", m:["Clear & Acne-Free"] },
+  { b:"Medicube", n:"Collagen Night Wrapping Mask 75ml", s:"mascarilla", p:"27.90", m:["Youth & Firmness"], h:"medicube-collagen-night-wrapping-mask-75ml" },
+  { b:"Medicube", n:"Deep vita c pad (70pcs)", s:"mascarilla", p:"27.90", m:["Brightening & Glow"], i:"Vitamina C" },
+  { b:"Medicube", n:"Kojic Acid Turmeric Brightening Gel Mask (1 sheet)", s:"mascarilla", p:"3.90", m:["Brightening & Glow"] },
+  { b:"Medicube", n:"PDRN Pink Collagen Gel Mask (1 sheet)", s:"mascarilla", p:"2.90", m:["Youth & Firmness"], i:"PDRN", h:"medicube-pdrn-pink-collagen-gel-mask-1-sheet" },
+  { b:"Medicube", n:"PDRN pink caffeine night wrapping mask 75ml", s:"mascarilla", p:"30.90", m:["Youth & Firmness"], i:"PDRN" },
+  { b:"Round Lab", n:"1025 Dokdo Toner 500ml", s:"tonico", p:"19.90", m:["Hydration Boost"], h:"round-lab-1025-dokdo-toner_500ml" },
+  { b:"TOCOBO", n:"Vita Glazed Lip Mask 20ml", s:"mascarilla", p:"15.90", m:["Hydration Boost"] },
+  { b:"VT Cosmetics", n:"VT Spot Patch 48ea", s:"mascarilla", p:"8.90", m:["Clear & Acne-Free"] },
   /* Sólo en la tienda online (no en el pedido del puesto). Clasificados a mano
      el 2026-09-26: la tienda no tiene tipo ni etiquetas en estos productos. */
   { b:"Round Lab", n:"Birch Juice Sun Cream 50ml", s:"proteccion", p:"15.90", m:["Hydration Boost"], h:"round-lab-birch-juice-sun-cream-50ml" },
