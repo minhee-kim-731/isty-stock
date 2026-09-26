@@ -180,10 +180,10 @@ button.ver{ padding:3px 9px; font-size:12.5px; }
     <button class="sec" id="rcsv">CSV 다운로드</button>
   </div>
   <div class="card wrap"><table>
-    <thead><tr><th>시각 (마드리드)</th><th>타입</th><th>유분</th><th>홍반</th><th>결</th><th>잡티</th><th>톤균일</th><th>추천 제품</th><th>이름 · 이메일</th><th></th></tr></thead>
+    <thead><tr><th>시각 (마드리드)</th><th>타입</th><th>유분</th><th>홍반</th><th>결</th><th>잡티</th><th>톤균일</th><th>추천 제품</th><th>이메일 · 사진</th><th></th></tr></thead>
     <tbody id="rtb"></tbody>
   </table></div>
-  <p class="mut" style="margin-top:12px">모든 분석 결과가 저장되고, 방문자가 이름·이메일을 남겼으면 함께 보입니다. 사진은 저장하지 않습니다. 지수는 0–100.</p>
+  <p class="mut" style="margin-top:12px">모든 분석 결과가 사진과 함께 저장되고, 이메일을 남겼으면 함께 보입니다. 사진은 30일 후 자동 삭제됩니다. 지수는 0–100.</p>
 </div>
 <div id="lista" hidden>
   <p class="mut">부스에서 이메일을 입력한 방문자 전체입니다. 소식 메일은 <b>마케팅 동의 = 예</b>인 사람에게만 보낼 수 있습니다.</p>
@@ -390,15 +390,14 @@ export default {
       let c;
       try { c = JSON.parse(texto); } catch { return json({ error: 'json' }, 400); }
       const corto = (v, n) => (v == null ? null : String(v).slice(0, n));
-      /* Nombre y correo del paso 2, si los hay (el paso 2 avisa de que se
-         guardan con los resultados). La foto sólo con consentimiento
-         explícito; hoy la página no la envía. */
+      /* Correo del paso 2 si lo hay, y la foto de la zona útil. Lococo lo
+         declara en /privacidad (sin casilla aparte, decisión suya); la foto
+         caduca a los DIAS_FOTO días (ver el UPDATE de abajo). */
       let email = null, foto = null;
       const e = String(c.email || '').trim().toLowerCase();
       if (CORREO.test(e) && e.length <= 254) email = e;
       const nombre = corto(String(c.nombre || '').trim() || null, 80);
-      if (c.consentimientoFoto === true && email && typeof c.foto === 'string' &&
-          /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(c.foto)) foto = c.foto;
+      if (typeof c.foto === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(c.foto)) foto = c.foto;
       const datos = JSON.stringify({
         metricas: Array.isArray(c.metricas) ? c.metricas.slice(0, 10) : [],
         zonas: Array.isArray(c.zonas) ? c.zonas.slice(0, 10) : [],

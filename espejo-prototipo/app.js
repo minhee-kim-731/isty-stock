@@ -1496,10 +1496,11 @@
 
   /* Se dispara una vez, al terminar el informe. No bloquea: quien está
      delante ya tiene sus resultados en pantalla. */
-  /* Registro del análisis (2026-09-26, a petición de Lococo): resultados
-     junto con el correo que la persona haya dejado en el paso 2 (si lo
-     dejó). Nunca la foto. Se explica en /privacidad, enlazada desde la
-     portada y desde el pie del informe.
+  /* Registro del análisis (2026-09-26, a petición de Lococo): resultados,
+     el correo del paso 2 (si lo dejó) y la foto de la zona útil (JPEG
+     512 px). El servidor borra las fotos a los 30 días. Se explica en
+     /privacidad, enlazada desde la portada; Lococo decidió no pedir casilla
+     aparte.
      El informe de ejemplo («test») no se registra. Un fallo aquí no afecta
      al visitante. */
   function guardarAnalisis(res, perfil, rut) {
@@ -1520,6 +1521,9 @@
       productos: rut && rut.pasos ? rut.pasos.map(function (p) { return p.producto.b + ' · ' + p.producto.n; }) : [],
       email: S.correo || null
     };
+    if (res.util && res.util.canvas) {
+      try { datos.foto = res.util.canvas.toDataURL('image/jpeg', 0.82); } catch (e) {}
+    }
     fetch('/api/analisis', {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(datos)
     }).catch(function () {});

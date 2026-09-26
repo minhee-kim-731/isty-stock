@@ -130,9 +130,9 @@
           'an electrode touching the skin. No camera can obtain it, and this report does not ' +
           'pretend otherwise.', ko: "각질층의 실제 수분량은 전극을 피부에 접촉시키는 정전용량식 코니오미터로만 측정됩니다. 어떤 카메라로도 얻을 수 없으며, 이 결과지는 얻을 수 있는 척하지 않습니다." },
     'intro.privTitulo': { es: 'Privacidad', en: 'Privacy', ko: "개인정보" },
-    'intro.priv': { es: "La foto se procesa en esta tableta y no se guarda.",
-      en: "The photo is processed on this tablet and not stored.",
-      ko: "사진은 이 태블릿에서 처리되며 저장되지 않습니다." },
+    'intro.priv': { es: "Consulta qué datos guardamos y cómo borrarlos en la política de privacidad.",
+      en: "See what data we keep and how to delete it in the privacy policy.",
+      ko: "저장하는 정보와 삭제 방법은 개인정보 처리방침에서 확인하세요." },
     'cor.eyebrow': { es: 'Paso 2 de 6', en: 'Step 02 · Contact', ko: "02단계 · 연락처" },
     'cor.h2':      { es: '¿Te enviamos novedades?', en: 'Want to hear from us?', ko: "소식을 보내드릴까요?" },
     'cor.lede': {
@@ -152,16 +152,16 @@
     'cor.continuar': { es: 'Continuar', en: 'Continue', ko: "계속" },
     'cor.saltar':    { es: 'Saltar este paso', en: 'Skip this step', ko: "이 단계 건너뛰기" },
     'cor.datosTitulo': { es: 'Qué guardamos', en: 'What is stored, and what is not', ko: "무엇이 저장되고 무엇이 저장되지 않는가" },
-    'cor.datos': { es: "Guardamos tu nombre y tu correo junto con los resultados, pero no la foto. Novedades solo si marcas la casilla. Para borrar tus datos: sales@lococo.beauty.",
-      en: "We keep your name and email with the results, but not the photo. News only if you tick the box. To delete your data: sales@lococo.beauty.",
-      ko: "이름·이메일은 결과와 함께 저장되며 사진은 저장하지 않습니다. 소식은 체크한 경우에만 보냅니다. 삭제 요청: sales@lococo.beauty" },
+    'cor.datos': { es: "Guardamos tu correo y tu foto junto con los resultados; la foto se borra a los 30 días. Novedades solo si marcas la casilla. Para borrar tus datos: sales@lococo.beauty.",
+      en: "We keep your email and photo with the results; the photo is deleted after 30 days. News only if you tick the box. To delete your data: sales@lococo.beauty.",
+      ko: "이메일과 사진은 결과와 함께 저장되며, 사진은 30일 후 삭제됩니다. 소식은 체크한 경우에만 보냅니다. 삭제 요청: sales@lococo.beauty" },
     'cor.h2Envio': { es: 'Déjanos el correo donde quieres recibir tu informe', en: "We’ll send you your report", ko: "검사 결과지를 보내드릴게요" },
     'cor.ledeEnvio': { es: 'Te lo enviamos en cuanto termine el análisis. La casilla de novedades es opcional: puedes continuar sin marcarla.', en: "We need your email to send you the analysis report as soon as it is ready. That is the only required use: everything else is optional.", ko: "분석이 끝나는 대로 결과지를 보내드리려면 이메일이 필요합니다. 필수로 쓰이는 건 이것뿐이고, 나머지는 선택입니다." },
     'cor.ledeSinEnvio': { es: 'La casilla de novedades es opcional: puedes continuar sin marcarla.', en: 'The news box is optional: you can continue without ticking it.', ko: "소식 받기 체크는 선택 사항이며, 체크하지 않아도 진행할 수 있습니다." },
     'cor.consentSalud': { es: "Acepto que Lococo me envíe por correo el informe de este análisis. El informe incluye datos sobre el estado de mi piel; se envía una sola vez y no se guarda copia.", en: "I agree that Lococo may email me the report of this analysis. The report contains data about the condition of my skin; it is sent once and no copy is kept.", ko: "Lococo가 이 분석의 결과지를 이메일로 보내는 데 동의합니다. 결과지에는 제 피부 상태에 관한 정보가 포함되며, 한 번만 발송되고 사본은 보관되지 않습니다." },
-    'cor.datosEnvio': { es: "Guardamos tu nombre y tu correo junto con los resultados, pero no la foto. Novedades solo si marcas la casilla. Para borrar tus datos: sales@lococo.beauty. El informe se envía a tu correo y no se guarda copia.",
-      en: "We keep your name and email with the results, but not the photo. News only if you tick the box. To delete your data: sales@lococo.beauty. The report is emailed to you and no copy is kept.",
-      ko: "이름·이메일은 결과와 함께 저장되며 사진은 저장하지 않습니다. 소식은 체크한 경우에만 보냅니다. 삭제 요청: sales@lococo.beauty · 결과지는 메일로 보내며 사본은 보관하지 않습니다." },
+    'cor.datosEnvio': { es: "Guardamos tu correo y tu foto junto con los resultados; la foto se borra a los 30 días. Novedades solo si marcas la casilla. Para borrar tus datos: sales@lococo.beauty. El informe se envía a tu correo y no se guarda copia.",
+      en: "We keep your email and photo with the results; the photo is deleted after 30 days. News only if you tick the box. To delete your data: sales@lococo.beauty. The report is emailed to you and no copy is kept.",
+      ko: "이메일과 사진은 결과와 함께 저장되며, 사진은 30일 후 삭제됩니다. 소식은 체크한 경우에만 보냅니다. 삭제 요청: sales@lococo.beauty · 결과지는 메일로 보내며 사본은 보관하지 않습니다." },
     'cor.errSalud': { es: "Marca la casilla del informe para poder enviártelo.", en: "Tick the report box so we can send it to you.", ko: "결과지를 보내드리려면 해당 항목에 체크해주세요." },
     'cor.envEnviando': { es: "Enviando el informe…", en: "Sending the report…", ko: "결과지 발송 중…" },
     'cor.envHecho': { es: "Informe enviado a {e}", en: "Report sent to {e}", ko: "{e} 로 결과지를 보냈습니다" },
@@ -172,9 +172,9 @@
     'correo.medido': { es: "Medido con la cámara, sobre tu foto", en: "Measured by the camera, from your photo", ko: "카메라로 사진에서 직접 측정한 값" },
     'correo.declarado': { es: "Según tus respuestas · la hidratación no se puede medir con cámara", en: "From your answers · hydration cannot be measured by camera", ko: "문진 응답 기준 · 수분은 카메라로 측정할 수 없습니다" },
     'correo.pasos': { es: "Cinco pasos elegidos para tu piel", en: "Five steps chosen for your skin", ko: "내 피부에 맞춰 고른 5단계" },
-    'correo.privacidad': { es: "Este correo se envía una sola vez. Tu foto no se ha guardado.",
-      en: "This email is sent once. Your photo was not stored.",
-      ko: "이 메일은 한 번만 발송됩니다. 사진은 저장되지 않았습니다." },
+    'correo.privacidad': { es: "Este correo se envía una sola vez.",
+      en: "This email is sent once.",
+      ko: "이 메일은 한 번만 발송됩니다." },
     'correo.intro': { es: "Este es el informe del análisis que acabas de hacer en el puesto de Lococo × Oki Doki Labs.", en: "This is the report of the analysis you just did at the Lococo × Oki Doki Labs stand.", ko: "Lococo × Oki Doki Labs 부스에서 방금 진행하신 분석의 결과지입니다." },
     'cor.errFormato': { es: 'Ese correo no parece válido.', en: 'That email does not look valid.', ko: "올바른 이메일 형식이 아닙니다." },
     'cor.errConsent': { es: 'Marca la casilla para poder guardar tu correo.',
@@ -435,14 +435,14 @@
           'Las recomendaciones son de activo y categoría de producto, orientativas y no ' +
           'sustituyen a una consulta profesional; si estás embarazada, en lactancia o en ' +
           'tratamiento dermatológico, consulta antes de introducir retinoides o ácidos.<br><br>' +
-          "<b>Datos.</b> Tu foto se procesó en esta tableta y no se ha guardado. Qué guardamos y cómo pedir que se borre: ver la política de privacidad.",
+          "<b>Datos.</b> Qué guardamos y cómo pedir que se borre: ver la política de privacidad.",
       en: '<b>This report is a cosmetic analysis, not a medical diagnosis.</b> This test neither ' +
           'detects nor rules out dermatological disease. If you notice a lesion that changes ' +
           'size, shape or colour, that bleeds, or that does not heal, see a dermatologist ' +
           'without waiting. Recommendations cover actives and product categories, are indicative ' +
           'only and do not replace professional advice; if you are pregnant, breastfeeding or ' +
           'under dermatological treatment, check before introducing retinoids or acids.<br><br>' +
-          "<b>Data.</b> Your photo was processed on this tablet and has not been stored. What we keep and how to request deletion: see the privacy policy.", ko: "<b>이 결과지는 미용 목적의 분석이며 의학적 진단이 아닙니다.</b> 이 테스트는 피부 질환을 발견하지도, 배제하지도 못합니다. 크기·모양·색이 변하거나, 피가 나거나, 낫지 않는 병변이 보이면 미루지 말고 피부과 전문의를 찾으세요. 권장 사항은 활성성분과 제품 카테고리에 대한 참고일 뿐 전문 상담을 대체하지 않습니다. 임신·수유 중이거나 피부과 치료를 받고 있다면 레티노이드나 산 성분을 시작하기 전에 상담하세요.<br><br><b>데이터.</b> 사진은 이 태블릿에서 처리되었으며 저장되지 않았습니다. 저장 항목과 삭제 요청 방법은 개인정보 처리방침을 참고하세요." },
+          "<b>Data.</b> What we keep and how to request deletion: see the privacy policy.", ko: "<b>이 결과지는 미용 목적의 분석이며 의학적 진단이 아닙니다.</b> 이 테스트는 피부 질환을 발견하지도, 배제하지도 못합니다. 크기·모양·색이 변하거나, 피가 나거나, 낫지 않는 병변이 보이면 미루지 말고 피부과 전문의를 찾으세요. 권장 사항은 활성성분과 제품 카테고리에 대한 참고일 뿐 전문 상담을 대체하지 않습니다. 임신·수유 중이거나 피부과 치료를 받고 있다면 레티노이드나 산 성분을 시작하기 전에 상담하세요.<br><br><b>데이터.</b> 저장 항목과 삭제 요청 방법은 개인정보 처리방침을 참고하세요." },
 
     'evento.eyebrow': {
       es: 'Lococo × Oki Doki Labs · 26–27 septiembre',
