@@ -260,6 +260,10 @@
       es: 'Cinco preguntas rápidas sobre cómo se comporta tu piel. Piensa en cómo está normalmente, no solo hoy.',
       en: 'Five questions about what the camera cannot see: how your skin behaves, how it ' +
           'tolerates and how it holds water. Answer for how it usually is, not today.', ko: "카메라가 볼 수 없는 것에 관한 5개 문항입니다 — 피부의 반응, 내성, 수분. 오늘이 아니라 평소 피부 상태를 기준으로 답해주세요." },
+    'prep.h':  { es: 'Preparando tu informe…', en: 'Preparing your report…', ko: "결과지를 준비하고 있어요…" },
+    'prep.p1': { es: 'Cruzando la medición con tus respuestas', en: 'Combining the measurement with your answers', ko: "측정 결과와 답변을 합치는 중" },
+    'prep.p2': { es: 'Eligiendo los ingredientes para tu piel', en: 'Choosing ingredients for your skin', ko: "피부에 맞는 성분을 고르는 중" },
+    'prep.p3': { es: 'Seleccionando tu rutina Lococo', en: 'Selecting your Lococo routine', ko: "Lococo 루틴을 고르는 중" },
     'cue.atras':   { es: 'Anterior', en: 'Back', ko: "이전" },
     'cue.num':     { es: 'Pregunta {i} de {n}', en: 'Question {i} of {n}',
       ko: "{n}문항 중 {i}번"

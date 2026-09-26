@@ -544,6 +544,37 @@
   }
 
   /* ------------------------------------------------------ CUESTIONARIO */
+  /* Pausa entre la última respuesta y el informe (Lococo, 2026-09-26): saltar
+     directamente parecía que no se había tenido en cuenta lo respondido.
+     Tres pasos de ~1,1 s en la misma tarjeta del cuestionario. El informe de
+     ejemplo («test») no pasa por aquí. */
+  var tPrep = null;
+  function prepararInforme() {
+    var card = $('q-card');
+    var pasos = ['prep.p1', 'prep.p2', 'prep.p3'];
+    $('btn-atras').parentNode.hidden = true;
+    $('q-prog').hidden = true;
+    card.innerHTML = '<h3 class="q-texto" style="margin-top:0">' + T('prep.h') + '</h3>' +
+      '<div class="barra-prog" style="margin:18px 0 16px"><i id="prog-prep"></i></div>' +
+      '<div class="log" id="log-prep"></div>';
+    var i = 0;
+    function siguiente() {
+      if (S.fase !== F_CUEST) return;               // sesión cerrada entretanto
+      if (i < pasos.length) {
+        $('log-prep').appendChild(el('div', 'log-row',
+          '<span class="i">' + String(i + 1).padStart(2, '0') + '</span><span class="t">' + T(pasos[i]) + '</span>'));
+        i++;
+        $('prog-prep').style.width = (100 * i / pasos.length) + '%';
+        tPrep = setTimeout(siguiente, PASO_MS);
+      } else {
+        $('btn-atras').parentNode.hidden = false;
+        $('q-prog').hidden = false;
+        construirInforme();
+      }
+    }
+    requestAnimationFrame(function () { $('prog-prep').style.width = '4%'; siguiente(); });
+  }
+
   function pintarPregunta() {
     var q = P.PREGUNTAS[S.qIndex];
     var card = $('q-card');
@@ -565,7 +596,7 @@
         });
         setTimeout(function () {
           if (S.qIndex < P.PREGUNTAS.length - 1) { S.qIndex++; pintarPregunta(); }
-          else construirInforme();
+          else prepararInforme();
         }, 200);
       });
       ops.appendChild(b);
@@ -1536,7 +1567,8 @@
   }
 
   function reiniciarSesion() {
-    clearInterval(tCuentaIdle); clearTimeout(tIdle);
+    clearInterval(tCuentaIdle); clearTimeout(tIdle); clearTimeout(tPrep);
+    $('btn-atras').parentNode.hidden = false; $('q-prog').hidden = false;
     var dlg = $('dlg-idle'); if (dlg.open) dlg.close();
     detenerCamara();
     // Destrucción de los datos de la sesión
