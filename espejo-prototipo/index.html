@@ -706,8 +706,8 @@ details.metodo summary{ font-size:13px; }
           <div class="aviso brk" style="margin-top:22px">
             <p class="eyebrow" data-i18n="intro.privTitulo">Privacidad</p>
             <p class="small" style="margin-top:8px" data-i18n="intro.priv">
-              Guardamos los resultados del análisis de forma anónima, sin tu nombre, tu correo ni tu foto.
-              Tu foto solo se guarda si lo aceptas expresamente en el paso siguiente, y se borra a los 30 días.
+              La foto se procesa en esta tableta y no se guarda. Si nos dejas tu nombre y tu correo, los
+              guardamos junto con los resultados del análisis.
             </p>
           </div>
         </div>
@@ -724,6 +724,9 @@ details.metodo summary{ font-size:13px; }
       </p>
 
       <div class="cor-caja brk">
+        <label class="cor-etq" for="nombre" data-i18n="cor.nombre">Nombre</label>
+        <input type="text" id="nombre" class="cor-input" autocomplete="name" maxlength="80"
+               spellcheck="false" style="margin-bottom:16px">
         <label class="cor-etq" for="correo" data-i18n="cor.etiqueta">Correo electrónico</label>
         <input type="email" id="correo" class="cor-input" autocomplete="email"
                inputmode="email" spellcheck="false" placeholder="nombre@correo.com">
@@ -742,12 +745,6 @@ details.metodo summary{ font-size:13px; }
             y ofertas. Puedo darme de baja cuando quiera escribiendo a sales@lococo.beauty.</span>
         </label>
 
-        <label class="cor-check">
-          <input type="checkbox" id="cor-consent-foto">
-          <span data-i18n="cor.consentFoto">(Opcional) Acepto que Lococo guarde mi foto y los resultados de este
-            análisis junto a mi correo durante 30 días, para revisar la recomendación y mejorar el servicio.
-            Puedo pedir que se borren antes en sales@lococo.beauty.</span>
-        </label>
 
         <div class="btn-row" style="margin-top:20px">
           <button class="btn btn--solido" id="btn-correo-ok" data-i18n="cor.continuar">Continuar</button>
@@ -758,8 +755,8 @@ details.metodo summary{ font-size:13px; }
       <div class="aviso" style="margin-top:22px">
         <p class="eyebrow" id="cor-datos-tit" data-i18n="cor.datosTitulo">Qué se guarda y qué no</p>
         <p class="small" style="margin-top:8px" id="cor-datos" data-i18n="cor.datos">
-          <b>Tu correo</b> se guarda en un servidor de Cloudflare en Europa. <b>Los resultados del análisis</b> se
-          guardan de forma anónima; <b>tu foto</b> solo si marcas la casilla, y se borra a los 30 días.
+          Guardamos tu nombre y tu correo junto con los resultados, pero no la foto. Novedades solo si marcas la
+          casilla. Para borrar tus datos: sales@lococo.beauty.
         </p>
       </div>
     </section>

@@ -197,8 +197,8 @@
     /* La casilla de marketing nunca bloquea: sin ella el correo simplemente
        no se guarda para novedades y el análisis sigue igual. */
     S.correo = email;
+    S.nombre = ($('nombre').value || '').trim().slice(0, 80);
     S.consintioSalud = S.puedeEnviar && $('cor-consent-salud').checked;
-    S.consintioFoto = $('cor-consent-foto').checked;
 
     var boton = $('btn-correo-ok');
     boton.disabled = true;
@@ -213,18 +213,18 @@
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        email: email, idioma: I.idioma(), sesion: S.sesionId, consentimiento: consiente
+        email: email, nombre: S.nombre, idioma: I.idioma(), sesion: S.sesionId, consentimiento: consiente
       })
     }).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); });
 
     alta.then(function () {
-      campo.value = '';
+      campo.value = ''; $('nombre').value = '';
       irACaptura();
     }).catch(function () {
       /* Si falla el alta de marketing no se retiene a nadie: el correo ya
          está guardado en memoria para el envío del informe, que es lo que
          la persona vino a pedir. */
-      campo.value = '';
+      campo.value = ''; $('nombre').value = '';
       irACaptura();
     });
   }
@@ -1439,12 +1439,11 @@
 
   /* Se dispara una vez, al terminar el informe. No bloquea: quien está
      delante ya tiene sus resultados en pantalla. */
-  /* Registro del análisis (2026-09-26, a petición de Lococo).
-     Siempre: los resultados, SIN correo ni foto (anónimos).
-     Sólo con la casilla de foto marcada y un correo: además el correo y la
-     imagen de la zona útil en JPEG. El servidor borra las fotos a los 30
-     días. El informe de ejemplo («test») no se registra. Un fallo aquí no
-     afecta al visitante. */
+  /* Registro del análisis (2026-09-26, a petición de Lococo): resultados
+     junto con el nombre y el correo que la persona haya dejado en el paso 2
+     (si los dejó). Nunca la foto. Los textos de privacidad lo dicen así.
+     El informe de ejemplo («test») no se registra. Un fallo aquí no afecta
+     al visitante. */
   function guardarAnalisis(res, perfil, rut) {
     if (S.analisisGuardado || S.modoFoto === 'prevista' || !res) return;
     S.analisisGuardado = true;
@@ -1460,13 +1459,10 @@
         return { id: z.id, valido: !!z.valido, EI: z.EI, brillo: z.brilloArea, textura: z.textura, ITA: z.ITA, lesiones: z.lesiones };
       }),
       respuestas: S.respuestas.slice(),
-      productos: rut && rut.pasos ? rut.pasos.map(function (p) { return p.producto.b + ' · ' + p.producto.n; }) : []
+      productos: rut && rut.pasos ? rut.pasos.map(function (p) { return p.producto.b + ' · ' + p.producto.n; }) : [],
+      email: S.correo || null,
+      nombre: S.nombre || null
     };
-    if (S.consintioFoto && S.correo && res.util && res.util.canvas) {
-      datos.email = S.correo;
-      datos.consentimientoFoto = true;
-      try { datos.foto = res.util.canvas.toDataURL('image/jpeg', 0.82); } catch (e) {}
-    }
     fetch('/api/analisis', {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(datos)
     }).catch(function () {});
@@ -1536,8 +1532,8 @@
     $('correo').value = '';
     $('cor-consent').checked = false;
     $('cor-consent-salud').checked = false;
-    $('cor-consent-foto').checked = false;
-    S.correo = null; S.consintioSalud = false; S.consintioFoto = false;
+    $('nombre').value = '';
+    S.correo = null; S.nombre = ''; S.consintioSalud = false;
     S.analisisGuardado = false;
     $('video').hidden = false;
     S.inicio = new Date();

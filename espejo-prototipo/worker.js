@@ -41,8 +41,13 @@ async function asegurarTabla(db) {
     codigo TEXT, tono TEXT, ita REAL, patron TEXT, confianza INTEGER,
     datos TEXT NOT NULL,
     email TEXT,
-    foto TEXT
+    foto TEXT,
+    nombre TEXT
   )`).run();
+  // Tablas creadas antes de añadir el nombre: la columna se añade una vez.
+  for (const t of ['analisis', 'leads']) {
+    try { await db.prepare(`ALTER TABLE ${t} ADD COLUMN nombre TEXT`).run(); } catch (e) {}
+  }
   tablaLista = true;
 }
 const MAX_HTML = 400 * 1024;   // un informe ronda los 30 kB; esto es techo, no objetivo
@@ -175,10 +180,10 @@ button.ver{ padding:3px 9px; font-size:12.5px; }
     <button class="sec" id="rcsv">CSV 다운로드</button>
   </div>
   <div class="card wrap"><table>
-    <thead><tr><th>시각 (마드리드)</th><th>타입</th><th>유분</th><th>홍반</th><th>결</th><th>잡티</th><th>톤균일</th><th>추천 제품</th><th>이메일 · 사진</th><th></th></tr></thead>
+    <thead><tr><th>시각 (마드리드)</th><th>타입</th><th>유분</th><th>홍반</th><th>결</th><th>잡티</th><th>톤균일</th><th>추천 제품</th><th>이름 · 이메일</th><th></th></tr></thead>
     <tbody id="rtb"></tbody>
   </table></div>
-  <p class="mut" style="margin-top:12px">결과는 모든 분석이 익명으로 저장됩니다. 이메일과 사진은 방문자가 사진 저장에 동의한 경우에만 있고, 사진은 30일 후 자동 삭제됩니다. 지수는 0–100.</p>
+  <p class="mut" style="margin-top:12px">모든 분석 결과가 저장되고, 방문자가 이름·이메일을 남겼으면 함께 보입니다. 사진은 저장하지 않습니다. 지수는 0–100.</p>
 </div>
 <div id="lista" hidden>
   <p class="mut">부스에서 이메일을 입력한 방문자 전체입니다. 소식 메일은 <b>마케팅 동의 = 예</b>인 사람에게만 보낼 수 있습니다.</p>
@@ -187,7 +192,7 @@ button.ver{ padding:3px 9px; font-size:12.5px; }
     <div class="fila"><button class="sec" id="csv">CSV 다운로드</button><button class="sec" id="salir">잠그기</button></div>
   </div>
   <div class="card wrap"><table>
-    <thead><tr><th>이메일</th><th>마케팅 동의</th><th>언어</th><th>등록 시각 (마드리드)</th><th></th></tr></thead>
+    <thead><tr><th>이름</th><th>이메일</th><th>마케팅 동의</th><th>언어</th><th>등록 시각 (마드리드)</th><th></th></tr></thead>
     <tbody id="tb"></tbody>
   </table></div>
   <p class="mut" style="margin-top:12px">수신거부 요청(sales@lococo.beauty)이 오면 해당 줄의 삭제를 눌러주세요. 삭제는 되돌릴 수 없으니 필요하면 먼저 CSV를 받아두세요.</p>
@@ -215,9 +220,9 @@ function cargar(){
     var si = datos.filter(function(l){ return l.consentimiento; }).length;
     document.getElementById('cuenta').textContent = '총 ' + datos.length + '명 · 마케팅 동의 ' + si + '명';
     document.getElementById('tb').innerHTML = datos.map(function(l){
-      return '<tr><td>' + esc(l.email) + '</td><td>' + (l.consentimiento ? '<b style="color:var(--acc)">예</b>' : '<span class="n">아니오</span>') + '</td><td class="n">' + esc(l.idioma) + '</td><td class="n">' + esc(hora(l.creado)) +
+      return '<tr><td>' + esc(l.nombre || '') + '</td><td>' + esc(l.email) + '</td><td>' + (l.consentimiento ? '<b style="color:var(--acc)">예</b>' : '<span class="n">아니오</span>') + '</td><td class="n">' + esc(l.idioma) + '</td><td class="n">' + esc(hora(l.creado)) +
         '</td><td><button class="x" data-id="' + l.id + '" data-email="' + esc(l.email) + '">삭제</button></td></tr>';
-    }).join('') || '<tr><td colspan="5" class="n">아직 없습니다.</td></tr>';
+    }).join('') || '<tr><td colspan="6" class="n">아직 없습니다.</td></tr>';
   });
 }
 document.getElementById('f').addEventListener('submit', function(ev){
@@ -230,7 +235,7 @@ document.getElementById('salir').addEventListener('click', function(){
   location.reload();
 });
 document.getElementById('csv').addEventListener('click', function(){
-  var filas = [['email','marketing','idioma','creado']].concat(datos.map(function(l){ return [l.email, l.consentimiento ? 'si' : 'no', l.idioma, l.creado]; }));
+  var filas = [['nombre','email','marketing','idioma','creado']].concat(datos.map(function(l){ return [l.nombre || '', l.email, l.consentimiento ? 'si' : 'no', l.idioma, l.creado]; }));
   var csv = filas.map(function(f){ return f.map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\\r\\n');
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\\ufeff' + csv], { type:'text/csv;charset=utf-8' }));
@@ -257,7 +262,7 @@ function cargarRes(){
       return '<tr><td class="n">' + esc(hora(a.creado)) + '</td><td><b>' + esc(a.codigo) + '</b><div class="n">' + esc(a.tono) + ' · ITA ' + esc(a.ita) + '</div></td>' +
         ['brillo','eritema','textura','imperfecciones','uniformidad'].map(function(k){ return '<td class="n">' + esc(met(d, k)) + '</td>'; }).join('') +
         '<td class="p">' + (d.productos || []).map(esc).join('<br>') + '</td>' +
-        '<td>' + (a.email ? esc(a.email) : '<span class="n">익명</span>') +
+        '<td>' + (a.nombre ? '<b>' + esc(a.nombre) + '</b><br>' : '') + (a.email ? esc(a.email) : '<span class="n">없음</span>') +
         (a.tiene_foto ? '<br><button class="sec ver" data-foto="' + a.id + '">사진 보기</button><div id="f' + a.id + '"></div>' : '') + '</td>' +
         '<td><button class="x" data-ra="' + a.id + '">삭제</button></td></tr>';
     }).join('') || '<tr><td colspan="10" class="n">아직 없습니다.</td></tr>';
@@ -287,9 +292,9 @@ document.getElementById('rtb').addEventListener('click', function(ev){
     .catch(function(e){ alert(e.message); });
 });
 document.getElementById('rcsv').addEventListener('click', function(){
-  var cab = ['creado','codigo','tono','ita','patron','confianza','brillo','eritema','textura','imperfecciones','uniformidad','productos','respuestas','email','foto'];
+  var cab = ['creado','nombre','codigo','tono','ita','patron','confianza','brillo','eritema','textura','imperfecciones','uniformidad','productos','respuestas','email','foto'];
   var filas = [cab].concat(analisis.map(function(a){ var d = a.d || {};
-    return [a.creado, a.codigo, a.tono, a.ita, a.patron, a.confianza, met(d,'brillo'), met(d,'eritema'), met(d,'textura'), met(d,'imperfecciones'), met(d,'uniformidad'),
+    return [a.creado, a.nombre || '', a.codigo, a.tono, a.ita, a.patron, a.confianza, met(d,'brillo'), met(d,'eritema'), met(d,'textura'), met(d,'imperfecciones'), met(d,'uniformidad'),
       (d.productos || []).join(' | '), (d.respuestas || []).join(' '), a.email || '', a.tiene_foto ? 'si' : 'no']; }));
   var csv = filas.map(function(f){ return f.map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\\r\\n');
   var a = document.createElement('a');
@@ -320,6 +325,7 @@ export default {
       const email = String(cuerpo.email || '').trim().toLowerCase();
       const idioma = String(cuerpo.idioma || '').slice(0, 5);
       const sesion = String(cuerpo.sesion || '').slice(0, 32);
+      const nombre = String(cuerpo.nombre || '').trim().slice(0, 80) || null;
       if (!CORREO.test(email) || email.length > 254) return json({ error: 'email' }, 400);
       /* El correo se guarda con o sin casilla; lo que la casilla decide es si
          se le puede escribir con novedades. Sólo cuenta un `true` explícito:
@@ -327,17 +333,19 @@ export default {
       const consiente = cuerpo.consentimiento === true ? 1 : 0;
 
       try {
+        await asegurarTabla(env.espejo_leads);
         await env.espejo_leads.prepare(
-          `INSERT INTO leads (email, idioma, consentimiento, sesion, creado)
-           VALUES (?, ?, ?, ?, ?)
+          `INSERT INTO leads (email, idioma, consentimiento, sesion, creado, nombre)
+           VALUES (?, ?, ?, ?, ?, ?)
            ON CONFLICT(email) DO UPDATE SET
              idioma = excluded.idioma,
              -- Volver sin marcar no retira un consentimiento dado: la baja
              -- se pide por correo y se hace desde /admin.
              consentimiento = MAX(consentimiento, excluded.consentimiento),
              sesion = excluded.sesion,
-             creado = excluded.creado`
-        ).bind(email, idioma, consiente, sesion, new Date().toISOString()).run();
+             creado = excluded.creado,
+             nombre = COALESCE(excluded.nombre, nombre)`
+        ).bind(email, idioma, consiente, sesion, new Date().toISOString(), nombre).run();
       } catch {
         return json({ error: 'db' }, 500);
       }
@@ -381,13 +389,15 @@ export default {
       let c;
       try { c = JSON.parse(texto); } catch { return json({ error: 'json' }, 400); }
       const corto = (v, n) => (v == null ? null : String(v).slice(0, n));
-      /* Correo y foto van juntos y sólo con consentimiento explícito. */
+      /* Nombre y correo del paso 2, si los hay (el paso 2 avisa de que se
+         guardan con los resultados). La foto sólo con consentimiento
+         explícito; hoy la página no la envía. */
       let email = null, foto = null;
-      if (c.consentimientoFoto === true) {
-        const e = String(c.email || '').trim().toLowerCase();
-        if (CORREO.test(e) && e.length <= 254) email = e;
-        if (email && typeof c.foto === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(c.foto)) foto = c.foto;
-      }
+      const e = String(c.email || '').trim().toLowerCase();
+      if (CORREO.test(e) && e.length <= 254) email = e;
+      const nombre = corto(String(c.nombre || '').trim() || null, 80);
+      if (c.consentimientoFoto === true && email && typeof c.foto === 'string' &&
+          /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(c.foto)) foto = c.foto;
       const datos = JSON.stringify({
         metricas: Array.isArray(c.metricas) ? c.metricas.slice(0, 10) : [],
         zonas: Array.isArray(c.zonas) ? c.zonas.slice(0, 10) : [],
@@ -398,12 +408,12 @@ export default {
         await asegurarTabla(env.espejo_leads);
         await env.espejo_leads.batch([
           env.espejo_leads.prepare(
-            `INSERT INTO analisis (creado, sesion, idioma, modo, codigo, tono, ita, patron, confianza, datos, email, foto)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO analisis (creado, sesion, idioma, modo, codigo, tono, ita, patron, confianza, datos, email, foto, nombre)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
           ).bind(new Date().toISOString(), corto(c.sesion, 32), corto(c.idioma, 5), corto(c.modo, 16),
                  corto(c.codigo, 8), corto(c.tono, 8), Number.isFinite(+c.ITA) ? +c.ITA : null,
                  corto(c.patron, 16), Number.isFinite(+c.confianza) ? Math.round(+c.confianza) : null,
-                 datos, email, foto),
+                 datos, email, foto, nombre),
           // Caducidad de las fotos: se aplica en cada alta, sin cron.
           env.espejo_leads.prepare(
             `UPDATE analisis SET foto = NULL WHERE foto IS NOT NULL AND creado < ?`
@@ -427,8 +437,9 @@ export default {
     }
     if (url.pathname === '/api/admin/leads') {
       { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }
+      await asegurarTabla(env.espejo_leads);
       const { results } = await env.espejo_leads.prepare(
-        'SELECT id, email, idioma, consentimiento, creado FROM leads ORDER BY creado DESC'
+        'SELECT id, email, nombre, idioma, consentimiento, creado FROM leads ORDER BY creado DESC'
       ).all();
       return json({ leads: results });
     }
@@ -436,7 +447,7 @@ export default {
       { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }
       await asegurarTabla(env.espejo_leads);
       const { results } = await env.espejo_leads.prepare(
-        `SELECT id, creado, idioma, modo, codigo, tono, ita, patron, confianza, datos, email,
+        `SELECT id, creado, idioma, modo, codigo, tono, ita, patron, confianza, datos, email, nombre,
                 foto IS NOT NULL AS tiene_foto
          FROM analisis ORDER BY creado DESC LIMIT 2000`
       ).all();
