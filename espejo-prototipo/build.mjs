@@ -69,6 +69,9 @@ writeFileSync(join(dist, 'index.html'), documento, 'utf8');
 for (const g of GUIONES) copyFileSync(join(raiz, g), join(dist, g));
 // Página de privacidad: documento completo propio, se copia tal cual.
 copyFileSync(join(raiz, 'privacidad.html'), join(dist, 'privacidad.html'));
+// Imágenes que usa el correo del informe (se cargan por URL absoluta).
+mkdirSync(join(dist, 'img'), { recursive: true });
+for (const f of ['lococo-logo-white.png']) copyFileSync(join(raiz, 'img', f), join(dist, 'img', f));
 
 /* La cámara sólo se pide a sí misma y desde el propio origen. Sin esta línea
    el navegador aplica su política por defecto; con ella queda explícito y no

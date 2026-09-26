@@ -1335,7 +1335,11 @@
     /* Hero azul */
     H.push('<tr><td style="background:' + CO.azul + ';padding:30px 28px 28px;border-radius:20px 20px 0 0">' +
       '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
-      '<td style="font-size:17px;font-weight:800;color:#FFFFFF;letter-spacing:0.5px">LOCOCO</td>' +
+      /* Logo alojado en este mismo origen: los clientes de correo bloquean
+         las imágenes en data:, y con location.origin sigue valiendo si la
+         página cambia de dominio. 360 px de ancho, se muestra a 120 (3x). */
+      '<td><img src="' + location.origin + '/img/lococo-logo-white.png" width="120" height="' + 28 +
+      '" alt="Lococo" style="display:block;border:0;outline:none;width:120px;height:auto"></td>' +
       '<td align="right" style="font-size:12px;color:#DCE5FF' + ls + '">' + esc(fecha) + '</td></tr></table>' +
       '<p style="margin:30px 0 6px;font-size:14px;color:#DCE5FF' + ls + '">' + T('correo.hola') + '</p>' +
       '<h1 style="margin:0 0 8px;font-size:30px;line-height:1.25;font-weight:800;color:#FFFFFF;letter-spacing:-0.8px">' +
