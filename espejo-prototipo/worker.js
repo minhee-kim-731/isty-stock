@@ -9,6 +9,9 @@
    POST /api/informe    → envía el informe por correo. NO LO GUARDA.
    POST /api/analisis   → registro del análisis: resultados anónimos siempre;
                           correo + foto sólo con casilla explícita (30 días).
+   GET  /r              → cuenta un clic del correo del informe y redirige a
+                          lococo.beauty (sólo a ese dominio: no es un
+                          redirector abierto).
    GET  /admin          → página de consulta del listado (código ADMIN_CODE).
    GET  /api/admin/leads, POST /api/admin/borrar → listado y bajas.
 
@@ -43,6 +46,11 @@ async function asegurarTabla(db) {
     email TEXT,
     foto TEXT,
     nombre TEXT
+  )`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS clics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creado TEXT NOT NULL,
+    sesion TEXT, tipo TEXT, destino TEXT NOT NULL
   )`).run();
   // Tablas creadas antes de añadir el nombre: la columna se añade una vez.
   for (const t of ['analisis', 'leads']) {
@@ -173,6 +181,20 @@ button.ver{ padding:3px 9px; font-size:12.5px; }
 <div class="fila tabs" id="tabs" hidden style="margin-bottom:16px">
   <button class="tab" data-tab="lista" aria-pressed="true">이메일 명단</button>
   <button class="tab" data-tab="res" aria-pressed="false">분석 결과</button>
+  <button class="tab" data-tab="cli" aria-pressed="false">메일 클릭</button>
+</div>
+<div id="cli" hidden>
+  <p class="mut">결과지 메일 속 제품·성분 링크를 누른 횟수입니다. 한 사람이 여러 번 누르면 모두 셉니다(사람 수는 따로 표시).</p>
+  <strong id="ccuenta" style="display:block;margin-bottom:12px"></strong>
+  <div class="card wrap" style="margin-bottom:16px"><table>
+    <thead><tr><th>링크</th><th>종류</th><th>클릭</th><th>사람</th></tr></thead>
+    <tbody id="ctb"></tbody>
+  </table></div>
+  <p class="mut">최근 클릭</p>
+  <div class="card wrap"><table>
+    <thead><tr><th>시각 (마드리드)</th><th>링크</th><th>이메일</th></tr></thead>
+    <tbody id="crtb"></tbody>
+  </table></div>
 </div>
 <div id="res" hidden>
   <div class="fila" style="justify-content:space-between;margin-bottom:12px">
@@ -274,7 +296,9 @@ document.getElementById('tabs').addEventListener('click', function(ev){
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
   document.getElementById('lista').hidden = t !== 'lista';
   document.getElementById('res').hidden = t !== 'res';
+  document.getElementById('cli').hidden = t !== 'cli';
   if (t === 'res') cargarRes().catch(function(e){ alert(e.message); });
+  if (t === 'cli') cargarClics().catch(function(e){ alert(e.message); });
 });
 document.getElementById('rtb').addEventListener('click', function(ev){
   var f = ev.target.closest('button[data-foto]');
@@ -302,6 +326,24 @@ document.getElementById('rcsv').addEventListener('click', function(){
   a.download = 'espejo-analisis-' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
 });
+function nombreDestino(d){
+  var m = /^\\/(products|collections)\\/(.+)$/.exec(d || '');
+  if (!m) return d || '';
+  return m[2].replace(/[-_]+/g, ' ').replace(/(^| )([a-z])/g, function(x, sp, c){ return sp + c.toUpperCase(); });
+}
+function cargarClics(){
+  return pedir('/api/admin/clics').then(function(r){ if (!r.ok) throw new Error('불러오지 못했습니다 (' + r.status + ').'); return r.json(); })
+  .then(function(d){
+    document.getElementById('ccuenta').textContent = '총 ' + (d.total.n || 0) + '번 클릭 · ' + (d.total.personas || 0) + '명';
+    document.getElementById('ctb').innerHTML = (d.porDestino || []).map(function(x){
+      return '<tr><td><a href="https://lococo.beauty' + esc(x.destino) + '" target="_blank" rel="noopener">' + esc(nombreDestino(x.destino)) + '</a></td><td class="n">' +
+        (x.tipo === 'ingrediente' ? '성분' : x.tipo === 'producto' ? '제품' : esc(x.tipo)) + '</td><td><b>' + x.n + '</b></td><td class="n">' + x.personas + '</td></tr>';
+    }).join('') || '<tr><td colspan="4" class="n">아직 없습니다.</td></tr>';
+    document.getElementById('crtb').innerHTML = (d.recientes || []).map(function(x){
+      return '<tr><td class="n">' + esc(hora(x.creado)) + '</td><td>' + esc(nombreDestino(x.destino)) + '</td><td>' + (x.email ? esc(x.email) : '<span class="n">-</span>') + '</td></tr>';
+    }).join('') || '<tr><td colspan="3" class="n">아직 없습니다.</td></tr>';
+  });
+}
 if (codigo) cargar().catch(function(){ codigo = ''; });
 </script></main></body></html>`;
 
@@ -381,6 +423,23 @@ export default {
       return json({ ok: true });
     }
 
+    /* ------------------------------------------------------------ clic */
+    if (url.pathname === '/r') {
+      const TIENDA = 'https://lococo.beauty';
+      let destino;
+      try { destino = new URL(url.searchParams.get('u') || '', TIENDA); } catch { destino = null; }
+      // Sólo se redirige a la tienda; cualquier otra cosa va a su portada.
+      if (!destino || destino.protocol !== 'https:' || destino.hostname !== 'lococo.beauty') destino = new URL(TIENDA);
+      const sesion = String(url.searchParams.get('s') || '').slice(0, 32) || null;
+      const tipo = String(url.searchParams.get('t') || '').slice(0, 16) || null;
+      try {
+        await asegurarTabla(env.espejo_leads);
+        await env.espejo_leads.prepare('INSERT INTO clics (creado, sesion, tipo, destino) VALUES (?, ?, ?, ?)')
+          .bind(new Date().toISOString(), sesion, tipo, destino.pathname.slice(0, 200)).run();
+      } catch (e) { /* un fallo al contar no debe impedir llegar a la tienda */ }
+      return Response.redirect(destino.toString(), 302);
+    }
+
     /* ------------------------------------------------------- analisis */
     if (url.pathname === '/api/analisis') {
       if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
@@ -452,6 +511,20 @@ export default {
          FROM analisis ORDER BY creado DESC LIMIT 2000`
       ).all();
       return json({ analisis: results });
+    }
+    if (url.pathname === '/api/admin/clics') {
+      { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }
+      await asegurarTabla(env.espejo_leads);
+      const db = env.espejo_leads;
+      const [por, recientes, total] = await db.batch([
+        db.prepare(`SELECT destino, tipo, COUNT(*) AS n, COUNT(DISTINCT sesion) AS personas
+                    FROM clics GROUP BY destino, tipo ORDER BY n DESC`),
+        db.prepare(`SELECT c.creado, c.tipo, c.destino, c.sesion,
+                           (SELECT email FROM analisis a WHERE a.sesion = c.sesion AND a.email IS NOT NULL ORDER BY a.id DESC LIMIT 1) AS email
+                    FROM clics c ORDER BY c.id DESC LIMIT 300`),
+        db.prepare(`SELECT COUNT(*) AS n, COUNT(DISTINCT sesion) AS personas FROM clics`)
+      ]);
+      return json({ total: total.results[0], porDestino: por.results, recientes: recientes.results });
     }
     if (url.pathname === '/api/admin/foto') {
       { const a = await autorizado(request, env); if (a === 'bloqueado') return json({ error: 'bloqueado' }, 429); if (a !== true) return json({ error: 'no_autorizado' }, 401); }

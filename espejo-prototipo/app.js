@@ -732,6 +732,13 @@
      no llevan enlace. Las UTM permiten ver en Shopify qué ventas vinieron
      del puesto y cuáles del correo. */
   var TIENDA = 'https://lococo.beauty';
+  /* Enlaces del correo: pasan por /r de este mismo servidor, que cuenta el
+     clic y redirige a la tienda con las mismas UTM. Así se ve en /admin
+     cuántas veces se pulsa cada enlace y desde qué informe (sesión). */
+  function clicCorreo(url, tipo) {
+    return location.origin + '/r?s=' + encodeURIComponent(S.sesionId || '') +
+      '&t=' + tipo + '&u=' + encodeURIComponent(url);
+  }
   function urlTienda(ruta, medio) {
     return TIENDA + ruta + '?utm_source=espejo&utm_medium=' + medio + '&utm_campaign=madrid2026';
   }
@@ -1466,7 +1473,7 @@
           esc(paso.producto.n) + '</div>' +
           (paso.cubre ? '<div style="margin-top:6px;font-size:12px;color:' + CO.suave + ls + '">' + T('inf.cubre') + ' · ' + esc(TX(paso.cubre)) + '</div>' : '') +
           (urlProducto(paso.producto, 'email')
-            ? '<a href="' + esc(urlProducto(paso.producto, 'email')) + '" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:700;color:' +
+            ? '<a href="' + esc(clicCorreo(urlProducto(paso.producto, 'email'), 'producto')) + '" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:700;color:' +
               CO.azul + ';text-decoration:none' + ls + '">' + T('inf.verProducto') + ' →</a>'
             : '') +
           '</td><td align="right" valign="top" style="padding:18px 16px 0 0;font-size:15px;font-weight:800;color:' + CO.tinta +
@@ -1478,7 +1485,7 @@
     H.push(tituloCorreo(T('inf.s4'), ''));
     H.push('<tr><td style="line-height:2.4">');
     P.ingredientesTienda(perfil, res, 3).forEach(function (a) {
-      H.push('<a href="' + esc(urlTienda(a.url, 'email')) + '" style="display:inline-block;margin:0 6px 8px 0;padding:6px 13px;border-radius:16px;background:' +
+      H.push('<a href="' + esc(clicCorreo(urlTienda(a.url, 'email'), 'ingrediente')) + '" style="display:inline-block;margin:0 6px 8px 0;padding:6px 13px;border-radius:16px;background:' +
         CO.palido + ';font-size:13px;font-weight:600;line-height:1.4;color:' + CO.azul + ';text-decoration:none' + ls + '">' + esc(TX(a.n)) + ' →</a>');
     });
     H.push('</td></tr>');

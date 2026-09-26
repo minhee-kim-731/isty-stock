@@ -139,6 +139,11 @@ npx wrangler d1 execute espejo-leads --remote \
 - `test` / `prueba` 예시 결과지는 저장하지 않는다.
 - 테이블은 Worker가 처음 쓸 때 만든다(배포 토큰에 D1 SQL 권한이 없어서). 스키마는 `esquema.sql`.
 
+**메일 클릭 탭**: 결과지 메일의 제품·성분 링크는 `/r?s=<세션>&t=producto|ingrediente&u=<쇼핑몰 URL>` 을 거친다.
+Worker가 `clics` 테이블에 기록하고 302로 쇼핑몰에 보낸다(UTM 유지). `lococo.beauty` 외의 주소는 쇼핑몰 첫 화면으로
+보낸다(열린 리다이렉트 방지). 링크별 클릭 수·사람 수, 최근 클릭(세션으로 분석 결과의 이메일을 찾아 표시).
+`wrangler.jsonc` 의 `run_worker_first` 에 `/r` 이 있어야 한다.
+
 ### 이메일 명단
 
 `https://<배포 주소>/admin` 에서 관리자 코드를 넣으면 마케팅 동의자 명단을 보고, CSV로 받고,
