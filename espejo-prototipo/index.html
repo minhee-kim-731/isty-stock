@@ -1,4 +1,4 @@
-<title>Espejo Cutáneo</title>
+<title>Lococo Skin Type Test</title>
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
 
@@ -15,23 +15,27 @@
 :root{
   color-scheme: dark;
 
-  --ground:#04080C;
-  --panel:#08121A;
-  --panel-2:#0B1A24;
-  --panel-3:#102633;
-  --line:#123243;
-  --line-2:#0C222E;
-  --line-hot:#1C556E;
+  --ground:#050814;
+  --panel:#0A1022;
+  --panel-2:#0E1630;
+  --panel-3:#142042;
+  --line:#1A2A52;
+  --line-2:#111C3A;
+  --line-hot:#2B4590;
 
-  --ink:#DCF2FA;
-  --ink-2:#8FB4C4;
-  --ink-3:#4F6F80;
+  --ink:#E8EEFF;
+  --ink-2:#A3B4DC;
+  --ink-3:#62739E;
 
-  --accent:#35D6F5;
-  --accent-2:#12A9C9;
-  --accent-dim:#0B5A6D;
-  --glow:rgba(53,214,245,.40);
-  --glow-soft:rgba(53,214,245,.13);
+  /* Azul de marca Lococo. #2966FF es el color de relleno (botones, barras,
+     puntos); sobre fondo oscuro no llega a 4,5:1 como texto pequeño, así que
+     el texto y los trazos finos usan un tono más claro de la misma familia. */
+  --brand:#2966FF;
+  --accent:#6E97FF;
+  --accent-2:#2966FF;
+  --accent-dim:#23408F;
+  --glow:rgba(41,102,255,.40);
+  --glow-soft:rgba(41,102,255,.14);
 
   /* Estado — siempre con etiqueta de texto, nunca color a solas */
   --st-ok:#3BE0A0;
@@ -42,7 +46,7 @@
   /* Rampas secuenciales sobre fondo oscuro: bajo = apagado, alto = encendido */
   --ery-1:#2A1519; --ery-2:#5E2220; --ery-3:#9A331F; --ery-4:#CE4E22; --ery-5:#FF7F40;
   --bri-1:#221C0E; --bri-2:#4D3E13; --bri-3:#7F6617; --bri-4:#B28F19; --bri-5:#F5C93A;
-  --tex-1:#0C2229; --tex-2:#14414E; --tex-3:#1C6577; --tex-4:#248CA8; --tex-5:#35D6F5;
+  --tex-1:#0E1633; --tex-2:#16275C; --tex-3:#1E3D8F; --tex-4:#2966FF; --tex-5:#6E97FF;
 
   /* Dos familias de la misma superfamilia. Un instrumento real no usa una
      tipografía de ciencia ficción: el carácter técnico sale de la densidad,
@@ -61,7 +65,7 @@ body{
   font-family:var(--sans); font-size:15px; line-height:1.55; letter-spacing:-.011em;
   -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
   background:
-    radial-gradient(1100px 620px at 50% -8%, #0B1E28 0%, rgba(11,30,40,0) 62%),
+    radial-gradient(1100px 620px at 50% -8%, #0E1B45 0%, rgba(14,27,69,0) 62%),
     var(--ground);
   background-attachment:fixed;
 }
@@ -86,7 +90,7 @@ button{ font:inherit; color:inherit; }
   position:sticky; top:0; z-index:60;
   display:flex; align-items:center; gap:0;
   height:46px; padding:0 12px 0 16px;
-  background:linear-gradient(180deg, #08161F 0%, #061019 100%);
+  background:linear-gradient(180deg, #0B1330 0%, #080E24 100%);
   border-bottom:1px solid var(--line);
   box-shadow:0 10px 30px -20px #000;
   font-family:var(--sans); font-size:10.5px; letter-spacing:.01em;
@@ -108,7 +112,7 @@ button{ font:inherit; color:inherit; }
 }
 .hud-lang button:last-child{ border-right:0; }
 .hud-lang button:hover{ color:var(--ink-2); }
-.hud-lang button[aria-pressed="true"]{ background:rgba(53,214,245,.16); color:var(--accent); }
+.hud-lang button[aria-pressed="true"]{ background:rgba(41,102,255,.16); color:var(--accent); }
 .hud b{ color:var(--accent); font-weight:500; }
 .hud-mark{
   font-family:var(--hud); font-size:14px; font-weight:600; letter-spacing:.01em;
@@ -129,7 +133,7 @@ button{ font:inherit; color:inherit; }
 .shell{ display:grid; grid-template-columns:206px 1fr; min-height:calc(100vh - 46px); }
 .rail{
   border-right:1px solid var(--line);
-  background:linear-gradient(180deg, rgba(11,26,36,.75), rgba(4,8,12,.75));
+  background:linear-gradient(180deg, rgba(14,22,48,.75), rgba(5,8,20,.75));
   padding:18px 0; display:flex; flex-direction:column; gap:2px;
 }
 .rail-step{
@@ -143,8 +147,8 @@ button{ font:inherit; color:inherit; }
 }
 .rail-step.done{ color:var(--ink-2); }
 .rail-step.done .num::after{ content:'✓'; color:var(--st-ok); }
-.rail-step.active{ color:var(--ink); background:linear-gradient(90deg, rgba(53,214,245,.10), transparent 80%); }
-.rail-step.active::before{ background:var(--accent); }
+.rail-step.active{ color:var(--ink); background:linear-gradient(90deg, rgba(41,102,255,.10), transparent 80%); }
+.rail-step.active::before{ background:var(--brand); }
 .rail-foot{
   margin-top:auto; padding:15px 16px; font-family:var(--sans); font-size:9.5px;
   line-height:1.8; color:var(--ink-3); letter-spacing:0;
@@ -179,15 +183,15 @@ button{ font:inherit; color:inherit; }
 /* --------------------------------------------------------------- BOTONES */
 .btn{
   position:relative; display:inline-flex; align-items:center; justify-content:center; gap:9px;
-  padding:13px 28px; border:1px solid var(--accent); background:rgba(53,214,245,.10);
+  padding:13px 28px; border:1px solid var(--accent); background:rgba(41,102,255,.10);
   color:var(--accent); cursor:pointer; font-family:var(--hud); font-weight:600; font-size:13.5px;
   letter-spacing:0;
   transition:background .16s ease, box-shadow .16s ease, color .16s ease;
 }
-.btn:hover:not(:disabled){ background:rgba(53,214,245,.20); color:#EAFBFF; }
+.btn:hover:not(:disabled){ background:rgba(41,102,255,.20); color:#fff; }
 .btn:disabled{ border-color:var(--line); background:transparent; color:var(--ink-3); cursor:not-allowed; }
-.btn--solido{ background:var(--accent); color:#03181E; border-color:var(--accent); }
-.btn--solido:hover:not(:disabled){ background:#5FE4FF; color:#03181E; }
+.btn--solido{ background:var(--brand); color:#fff; border-color:var(--brand); }
+.btn--solido:hover:not(:disabled){ background:#3D78FF; color:#fff; border-color:#3D78FF; }
 .btn--sm{ padding:9px 16px; font-size:12px; }
 .btn-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 
@@ -195,7 +199,7 @@ button{ font:inherit; color:inherit; }
 .intro-grid{ display:grid; grid-template-columns:1.12fr .88fr; gap:50px; align-items:start; }
 @media (max-width:900px){ .intro-grid{ grid-template-columns:1fr; gap:32px; } }
 .intro h1{ font-size:clamp(36px,6.2vw,64px); margin:14px 0 20px; }
-.intro h1 .on{ color:var(--accent); }
+.intro h1 .on{ color:var(--brand); }  /* texto grande: #2966FF cumple 3:1 */
 
 .spec{ border-top:1px solid var(--line-hot); }
 .spec-row{
@@ -249,7 +253,7 @@ button{ font:inherit; color:inherit; }
 @keyframes girar{ to{ transform:rotate(360deg); } }
 .barrido{
   position:absolute; left:0; right:0; height:24%; pointer-events:none; opacity:0;
-  background:linear-gradient(180deg, rgba(53,214,245,0), rgba(53,214,245,.22) 55%, rgba(53,214,245,0));
+  background:linear-gradient(180deg, rgba(41,102,255,0), rgba(41,102,255,.22) 55%, rgba(41,102,255,0));
 }
 .barrido.on{ animation:barrer 1.5s ease-in-out infinite; }
 @keyframes barrer{ 0%{ top:-24%; opacity:.85 } 100%{ top:100%; opacity:.85 } }
@@ -351,7 +355,7 @@ button{ font:inherit; color:inherit; }
 .log-row .t{ color:var(--ink); }
 .log-row .d{ color:var(--ink-3); font-size:11px; display:block; }
 .barra-prog{ height:2px; background:var(--line-2); overflow:hidden; }
-.barra-prog i{ display:block; height:100%; background:var(--accent); width:0; transition:width .3s ease; }
+.barra-prog i{ display:block; height:100%; background:var(--brand); width:0; transition:width .3s ease; }
 
 /* ----------------------------------------------------------- CUESTIONARIO */
 .q-card{ background:var(--panel); border:1px solid var(--line); padding:26px 26px 22px; }
@@ -367,12 +371,12 @@ button{ font:inherit; color:inherit; }
 }
 .q-op:hover{ border-color:var(--accent-2); background:var(--panel-3); color:var(--ink); }
 .q-op .mk{ width:13px; height:13px; border:1px solid var(--ink-3); border-radius:50%; margin-top:3px; }
-.q-op[aria-checked="true"]{ border-color:var(--accent); background:rgba(53,214,245,.10); color:var(--ink); }
+.q-op[aria-checked="true"]{ border-color:var(--accent); background:rgba(41,102,255,.10); color:var(--ink); }
 .q-op[aria-checked="true"] .mk{ border-color:var(--accent); background:var(--accent); box-shadow:inset 0 0 0 2.5px var(--panel-2); }
 .q-prog{ display:flex; gap:3px; margin-bottom:20px; }
 .q-prog i{ flex:1; height:3px; background:var(--line-2); }
 .q-prog i.on{ background:var(--accent-dim); }
-.q-prog i.cur{ background:var(--accent); }
+.q-prog i.cur{ background:var(--brand); }
 
 /* -------------------------------------------------------------- INFORME */
 .rep-hero{ display:grid; grid-template-columns:1fr auto; gap:30px; align-items:end; padding-bottom:22px; border-bottom:1px solid var(--line-hot); }
@@ -380,7 +384,7 @@ button{ font:inherit; color:inherit; }
 .rep-hero h2{ font-family:var(--hud); font-weight:600; font-size:clamp(32px,5.2vw,52px); line-height:1.06; margin:11px 0 9px; }
 .codigo{
   font-family:var(--mono); font-size:33px; font-weight:600; letter-spacing:.01em;
-  color:var(--accent); line-height:1;
+  color:var(--brand); line-height:1;
 }
 .codigo-pie{ font-family:var(--sans); font-size:9.5px; letter-spacing:.01em; color:var(--ink-3); margin-top:8px; text-align:right; }
 @media (max-width:720px){ .codigo-pie{ text-align:left; } }
@@ -426,7 +430,7 @@ button{ font:inherit; color:inherit; }
 }
 .seg button:last-child{ border-right:0; }
 .seg button:hover{ color:var(--ink-2); }
-.seg button[aria-pressed="true"]{ background:rgba(53,214,245,.14); color:var(--accent); }
+.seg button[aria-pressed="true"]{ background:rgba(41,102,255,.14); color:var(--accent); }
 .lupa-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
 @media (max-width:780px){ .lupa-grid{ grid-template-columns:1fr; } }
 .lupa{ margin:0; border:1px solid var(--line); background:linear-gradient(180deg, var(--panel-2), var(--panel)); }
@@ -440,7 +444,7 @@ button{ font:inherit; color:inherit; }
 @keyframes lupa-barre{ 0%{ top:0; opacity:0; } 10%{ opacity:1; } 90%{ opacity:1; } 100%{ top:100%; opacity:0; } }
 @media (prefers-reduced-motion: reduce){ .lupa-barrido{ display:none; } }
 .lupa-tag{ position:absolute; top:10px; right:10px; font-family:var(--sans); font-size:9.5px; letter-spacing:.01em; color:var(--accent); background:rgba(4,8,12,.72); padding:3px 7px; }
-.lupa-esc{ position:absolute; left:0; right:0; bottom:12px; display:flex; align-items:center; gap:6px; font-family:var(--sans); font-size:9.5px; color:#DCF2FA; text-shadow:0 0 4px #000; }
+.lupa-esc{ position:absolute; left:0; right:0; bottom:12px; display:flex; align-items:center; gap:6px; font-family:var(--sans); font-size:9.5px; color:#E8EEFF; text-shadow:0 0 4px #000; }
 .lupa-esc i{ display:block; flex:none; margin-left:12px; height:2px; background:#DCF2FA; box-shadow:0 0 3px #000; }
 .lupa-datos{ display:flex; flex-direction:column; gap:4px; padding:10px 12px 12px; font-family:var(--mono); font-size:11px; color:var(--ink-2); }
 .lupa-datos b{ color:var(--ink); font-weight:600; }
@@ -466,7 +470,7 @@ button{ font:inherit; color:inherit; }
 .eje-val{ font-family:var(--mono); font-size:11px; color:var(--ink-2); }
 .eje-esc{ position:relative; height:26px; }
 .eje-pista{ position:absolute; top:11px; left:0; right:0; height:3px; background:var(--line-2); }
-.eje-pista::after{ content:''; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(53,214,245,.16), transparent); }
+.eje-pista::after{ content:''; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(41,102,255,.16), transparent); }
 .eje-centro{ position:absolute; top:5px; bottom:5px; left:50%; width:1px; background:var(--line-hot); }
 .eje-punto{ position:absolute; top:5px; width:15px; height:15px; border-radius:50%; background:var(--accent); transform:translateX(-50%); box-shadow:inset 0 0 0 2.5px var(--ground); }
 .eje-pies{ display:grid; grid-template-columns:1fr 1fr; font-family:var(--sans); font-size:9.5px; letter-spacing:.01em; color:var(--ink-3); }
@@ -643,10 +647,13 @@ details.metodo summary{ font-size:13px; }
 
 .enlace-priv{ color:var(--ink-2); text-decoration:underline; text-underline-offset:2px; }
 .enlace-priv:hover{ color:var(--accent); }
+
+.hud-sub{ font-weight:500; color:var(--accent); margin-left:4px; }
+@media (max-width:520px){ .hud-sub{ display:none; } }
 </style>
 
 <div class="hud">
-  <span class="hud-mark">Espejo</span>
+  <span class="hud-mark">Lococo <span class="hud-sub">Skin Type Test</span></span>
   <div class="hud-scroll">
     <span class="hud-item" hidden><span data-i18n="hud.ses">SES</span> <b class="num" id="hud-sesion">—</b></span>
     <span class="hud-item" hidden><span data-i18n="hud.eq">EQ</span> <b class="num" id="hud-equipo">—</b></span>
@@ -674,7 +681,7 @@ details.metodo summary{ font-size:13px; }
           <p class="eyebrow" data-i18n="intro.eyebrow">Análisis cutáneo óptico · Madrid 2026</p>
           <h1 class="display" data-i18n="intro.h1">Tu piel, <span class="on">medida</span><br>y explicada.</h1>
           <p class="lede" data-i18n="intro.p1">
-            Espejo fotografía tu rostro una sola vez y extrae de esa imagen cinco magnitudes
+            Hacemos una foto de tu cara y medimos cinco magnitudes
             físicas: reflexión especular, absorción de hemoglobina, relieve en la banda del
             poro, lesiones focales y ángulo tipológico del tono. Después las cruza con un
             cuestionario clínico breve para construir un perfil completo.
@@ -783,16 +790,16 @@ details.metodo summary{ font-size:13px; }
                 <rect width="720" height="960" fill="rgba(2,6,10,.66)" mask="url(#m-ret)"/>
 
                 <g id="anillo-tics" opacity=".55">
-                  <circle cx="360" cy="480" r="300" fill="none" stroke="#35D6F5" stroke-width="1"
+                  <circle cx="360" cy="480" r="300" fill="none" stroke="#6E97FF" stroke-width="1"
                           stroke-dasharray="2 20" opacity=".8"/>
-                  <circle cx="360" cy="480" r="318" fill="none" stroke="#35D6F5" stroke-width="1"
+                  <circle cx="360" cy="480" r="318" fill="none" stroke="#6E97FF" stroke-width="1"
                           stroke-dasharray="1 46" opacity=".55"/>
                 </g>
 
-                <ellipse cx="360" cy="480" rx="268" ry="372" fill="none" stroke="#35D6F5"
+                <ellipse cx="360" cy="480" rx="268" ry="372" fill="none" stroke="#6E97FF"
                          stroke-width="1.5" stroke-dasharray="10 8" opacity=".9"/>
 
-                <g stroke="#35D6F5" stroke-width="1" opacity=".45">
+                <g stroke="#6E97FF" stroke-width="1" opacity=".45">
                   <line x1="196" y1="420" x2="524" y2="420"/>
                   <line x1="252" y1="632" x2="468" y2="632"/>
                   <line x1="360" y1="112" x2="360" y2="160"/>

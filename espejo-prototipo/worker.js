@@ -74,7 +74,7 @@ async function enviar(env, para, asunto, html) {
       'content-type': 'application/json'
     },
     body: JSON.stringify({
-      from: env.REMITENTE || 'Espejo <espejo@lococo.beauty>',
+      from: env.REMITENTE || 'Lococo Skin Type Test <espejo@lococo.beauty>',
       to: [para],
       subject: asunto,
       html: html
@@ -133,7 +133,7 @@ const ADMIN_HTML = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Espejo · 이메일 명단</title>
+<title>Lococo Skin Type Test · 관리</title>
 <style>
 :root{ color-scheme:light dark; --bg:#f6f7f9; --fg:#14181f; --mut:#667085; --line:#e4e7ec; --card:#fff; --acc:#2966FF; --bad:#d92d20; }
 @media (prefers-color-scheme:dark){ :root{ --bg:#0b0f14; --fg:#e6ebf2; --mut:#8a94a6; --line:#1f2733; --card:#121821; } }
@@ -161,7 +161,7 @@ td.p{ font-size:12.5px; color:var(--mut); min-width:220px; }
 img.foto{ display:block; max-width:240px; border-radius:8px; margin-top:8px; }
 button.ver{ padding:3px 9px; font-size:12.5px; }
 </style></head><body><main>
-<h1>Espejo 관리</h1>
+<h1>Lococo Skin Type Test 관리</h1>
 <p class="mut">이메일 명단과 분석 결과. 코드가 있는 사람만 볼 수 있습니다.</p>
 <div class="card" id="login">
   <form id="f" class="fila">
@@ -362,7 +362,7 @@ export default {
       try { cuerpo = await request.json(); } catch { return json({ error: 'json' }, 400); }
 
       const email = String(cuerpo.email || '').trim().toLowerCase();
-      const asunto = String(cuerpo.asunto || 'Espejo').slice(0, 160);
+      const asunto = String(cuerpo.asunto || 'Lococo Skin Type Test').slice(0, 160);
       const html = String(cuerpo.html || '');
 
       if (!CORREO.test(email) || email.length > 254) return json({ error: 'email' }, 400);

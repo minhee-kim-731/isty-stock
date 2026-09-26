@@ -824,7 +824,7 @@
       });
       ctx.lineWidth = 1.1 * dpr;
       pp.puntos.forEach(function (q) {
-        ctx.strokeStyle = 'rgba(53,214,245,' + (0.45 + 0.5 * q.p).toFixed(2) + ')';
+        ctx.strokeStyle = 'rgba(110,151,255,' + (0.45 + 0.5 * q.p).toFixed(2) + ')';
         ctx.beginPath(); ctx.arc((q.x + 0.5) * k, (q.y + 0.5) * k, (1.6 + q.p) * dpr * 1.4, 0, 6.2832); ctx.stroke();
       });
       ctx.strokeStyle = '#FF5C55'; ctx.lineWidth = 1.6 * dpr;
@@ -867,7 +867,7 @@
       var c = centroide(Z.poly);
       s.push('<text x="' + (c[0] * W).toFixed(1) + '" y="' + (c[1] * H + 3.5).toFixed(1) +
              '" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="9.5" ' +
-             'font-weight="500" fill="' + (p >= M.oscuroDesde ? '#04080C' : '#DCF2FA') + '">' +
+             'font-weight="500" fill="' + (p >= M.oscuroDesde ? '#050814' : '#E8EEFF') + '">' +
              nf(v, M.dec) + '</text>');
     });
 

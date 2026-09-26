@@ -26,8 +26,8 @@ const GUIONES = ['i18n.js', 'engine.js', 'perfil.js', 'catalogo.js', 'calibracio
 const FAVICON =
   'data:image/svg+xml,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
-    '<rect width="64" height="64" fill="#04080C"/>' +
-    '<text y="48" x="32" font-size="42" text-anchor="middle">🪞</text></svg>'
+    '<rect width="64" height="64" rx="14" fill="#2966FF"/>' +
+    '<text y="45" x="32" font-size="38" font-family="Arial,sans-serif" font-weight="700" fill="#fff" text-anchor="middle">L</text></svg>'
   ).replace(/'/g, '%27');
 
 const cuerpo = readFileSync(join(raiz, 'index.html'), 'utf8');
@@ -35,7 +35,7 @@ const cuerpo = readFileSync(join(raiz, 'index.html'), 'utf8');
 /* El <title> vive en la fuente para que el Artifact lo tome de ahí; aquí se
    extrae para colocarlo en el <head> real y no duplicarlo en el <body>. */
 const mTitulo = cuerpo.match(/^<title>([^<]*)<\/title>\s*/);
-const titulo = mTitulo ? mTitulo[1] : 'Espejo Cutáneo';
+const titulo = mTitulo ? mTitulo[1] : 'Lococo Skin Type Test';
 const resto = mTitulo ? cuerpo.slice(mTitulo[0].length) : cuerpo;
 
 const documento = `<!doctype html>
@@ -44,15 +44,15 @@ const documento = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${titulo}</title>
-<meta name="description" content="Análisis cutáneo óptico · Lococo × Oki Doki Labs, Madrid 2026. Todo el procesamiento ocurre en el dispositivo.">
+<meta name="description" content="Lococo Skin Type Test · Lococo × Oki Doki Labs, Madrid 2026.">
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#04080C">
+<meta name="theme-color" content="#050814">
 <!-- Añadido a la pantalla de inicio del iPad, arranca sin barra del navegador:
      es el modo en el que va a funcionar el puesto. -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Espejo">
+<meta name="apple-mobile-web-app-title" content="Lococo Skin Test">
 <link rel="icon" href="${FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

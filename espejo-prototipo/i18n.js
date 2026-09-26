@@ -101,11 +101,11 @@
       es: 'Tu piel en<br><span class="on">3 minutos</span>.',
       en: 'Your skin, <span class="on">measured</span><br>and explained.', ko: "당신의 피부,<br><span class=\"on\">측정</span>하고 설명합니다." },
     'intro.p1': {
-      es: 'Espejo hace una foto de tu cara y mide cinco cosas: brillo, rojez, textura, imperfecciones y tono. Después te hace cinco preguntas rápidas y, con todo eso, arma tu perfil de piel.',
-      en: 'Espejo photographs your face once and pulls five physical quantities out of that ' +
+      es: 'Hacemos una foto de tu cara y medimos cinco cosas: brillo, rojez, textura, imperfecciones y tono. Después te hacemos cinco preguntas rápidas y, con todo eso, armamos tu perfil de piel.',
+      en: 'The Lococo Skin Type Test photographs your face once and pulls five physical quantities out of that ' +
           'image: specular reflection, haemoglobin absorption, relief in the pore band, focal ' +
           'lesions and the typology angle of your skin tone. It then cross-checks them against ' +
-          'a short clinical questionnaire to build a full profile.', ko: "Espejo는 얼굴을 한 번 촬영해 그 이미지에서 다섯 가지 물리량을 뽑아냅니다 — 정반사, 헤모글로빈 흡수, 모공 대역의 요철, 국소 병변, 피부톤의 유형각(ITA). 그다음 짧은 임상 문진과 교차해 전체 프로필을 구성합니다." },
+          'a short clinical questionnaire to build a full profile.', ko: "Lococo Skin Type Test는 얼굴을 한 번 촬영해 그 이미지에서 다섯 가지 물리량을 뽑아냅니다 — 정반사, 헤모글로빈 흡수, 모공 대역의 요철, 국소 병변, 피부톤의 유형각(ITA). 그다음 짧은 임상 문진과 교차해 전체 프로필을 구성합니다." },
     'intro.p2': {
       es: 'Todo se hace dentro de esta tableta.',
       en: 'The whole thing takes about three minutes and happens entirely on this tablet.', ko: "전 과정은 약 3분이 걸리고, 이 태블릿 안에서만 이루어집니다." },
@@ -166,8 +166,8 @@
     'cor.envEnviando': { es: "Enviando el informe…", en: "Sending the report…", ko: "결과지 발송 중…" },
     'cor.envHecho': { es: "Informe enviado a {e}", en: "Report sent to {e}", ko: "{e} 로 결과지를 보냈습니다" },
     'cor.envFallo': { es: "No se ha podido enviar el informe. Puedes fotografiar esta pantalla.", en: "The report could not be sent. You can photograph this screen.", ko: "결과지를 보내지 못했습니다. 이 화면을 촬영해 두셔도 됩니다." },
-    'correo.asunto': { es: "Tu informe Espejo · Lococo", en: "Your Espejo report · Lococo", ko: "Espejo 피부 분석 결과지 · Lococo" },
-    'correo.hola': { es: "Tu análisis Espejo", en: "Your Espejo analysis", ko: "Espejo 피부 분석 결과" },
+    'correo.asunto': { es: "Tu resultado · Lococo Skin Type Test", en: "Your results · Lococo Skin Type Test", ko: "Lococo Skin Type Test 결과지" },
+    'correo.hola': { es: "Tu Lococo Skin Type Test", en: "Your Lococo Skin Type Test", ko: "Lococo Skin Type Test 결과" },
     'correo.tipo': { es: "Tipo de piel según Baumann", en: "Baumann skin type", ko: "Baumann 피부 타입" },
     'correo.medido': { es: "Medido con la cámara, sobre tu foto", en: "Measured by the camera, from your photo", ko: "카메라로 사진에서 직접 측정한 값" },
     'correo.declarado': { es: "Según tus respuestas · la hidratación no se puede medir con cámara", en: "From your answers · hydration cannot be measured by camera", ko: "문진 응답 기준 · 수분은 카메라로 측정할 수 없습니다" },
@@ -424,20 +424,20 @@
     'inf.prevista':  { es: 'prevista', en: 'preview', ko: "미리보기" },
 
     'legal': {
-      es: '<b>Este informe es un análisis cosmético, no un diagnóstico médico.</b> Espejo no ' +
+      es: '<b>Este informe es un análisis cosmético, no un diagnóstico médico.</b> Este test no ' +
           'detecta ni descarta patología dermatológica. Si observas una lesión que cambia de ' +
           'tamaño, forma o color, que sangra o que no cura, acude a un dermatólogo sin esperar. ' +
           'Las recomendaciones son de activo y categoría de producto, orientativas y no ' +
           'sustituyen a una consulta profesional; si estás embarazada, en lactancia o en ' +
           'tratamiento dermatológico, consulta antes de introducir retinoides o ácidos.<br><br>' +
           "<b>Datos.</b> Tu foto se procesó en esta tableta y no se ha guardado. Qué guardamos y cómo pedir que se borre: ver la política de privacidad.",
-      en: '<b>This report is a cosmetic analysis, not a medical diagnosis.</b> Espejo neither ' +
+      en: '<b>This report is a cosmetic analysis, not a medical diagnosis.</b> This test neither ' +
           'detects nor rules out dermatological disease. If you notice a lesion that changes ' +
           'size, shape or colour, that bleeds, or that does not heal, see a dermatologist ' +
           'without waiting. Recommendations cover actives and product categories, are indicative ' +
           'only and do not replace professional advice; if you are pregnant, breastfeeding or ' +
           'under dermatological treatment, check before introducing retinoids or acids.<br><br>' +
-          "<b>Data.</b> Your photo was processed on this tablet and has not been stored. What we keep and how to request deletion: see the privacy policy.", ko: "<b>이 결과지는 미용 목적의 분석이며 의학적 진단이 아닙니다.</b> Espejo는 피부 질환을 발견하지도, 배제하지도 못합니다. 크기·모양·색이 변하거나, 피가 나거나, 낫지 않는 병변이 보이면 미루지 말고 피부과 전문의를 찾으세요. 권장 사항은 활성성분과 제품 카테고리에 대한 참고일 뿐 전문 상담을 대체하지 않습니다. 임신·수유 중이거나 피부과 치료를 받고 있다면 레티노이드나 산 성분을 시작하기 전에 상담하세요.<br><br><b>데이터.</b> 사진은 이 태블릿에서 처리되었으며 저장되지 않았습니다. 저장 항목과 삭제 요청 방법은 개인정보 처리방침을 참고하세요." },
+          "<b>Data.</b> Your photo was processed on this tablet and has not been stored. What we keep and how to request deletion: see the privacy policy.", ko: "<b>이 결과지는 미용 목적의 분석이며 의학적 진단이 아닙니다.</b> 이 테스트는 피부 질환을 발견하지도, 배제하지도 못합니다. 크기·모양·색이 변하거나, 피가 나거나, 낫지 않는 병변이 보이면 미루지 말고 피부과 전문의를 찾으세요. 권장 사항은 활성성분과 제품 카테고리에 대한 참고일 뿐 전문 상담을 대체하지 않습니다. 임신·수유 중이거나 피부과 치료를 받고 있다면 레티노이드나 산 성분을 시작하기 전에 상담하세요.<br><br><b>데이터.</b> 사진은 이 태블릿에서 처리되었으며 저장되지 않았습니다. 저장 항목과 삭제 요청 방법은 개인정보 처리방침을 참고하세요." },
 
     'evento.eyebrow': {
       es: 'Lococo × Oki Doki Labs · 26–27 septiembre',
