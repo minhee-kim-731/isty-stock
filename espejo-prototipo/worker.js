@@ -366,8 +366,9 @@ export default {
       const html = String(cuerpo.html || '');
 
       if (!CORREO.test(email) || email.length > 254) return json({ error: 'email' }, 400);
-      /* El informe contiene datos de salud: aquí hace falta consentimiento
-         EXPLÍCITO, no el genérico del alta de correo. */
+      /* La página marca `consentimientoSalud` cuando el visitante ha escrito
+         su correo en el paso «donde quieres recibir tu informe», que es la
+         petición del envío. Sin esa marca no se envía nada. */
       if (cuerpo.consentimientoSalud !== true) return json({ error: 'consentimiento_salud' }, 400);
       if (!html || html.length > MAX_HTML) return json({ error: 'html' }, 400);
 

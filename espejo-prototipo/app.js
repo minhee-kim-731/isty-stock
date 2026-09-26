@@ -147,7 +147,6 @@
        de apoyo no promete plazo de entrega. */
     $('cor-h2').setAttribute('data-i18n', 'cor.h2Envio');
     $('cor-lede').setAttribute('data-i18n', env ? 'cor.ledeEnvio' : 'cor.ledeSinEnvio');
-    $('cor-check-salud').hidden = !env;
     /* Sin envío, el correo solo sirve para marketing y tiene que poder
        omitirse: exigirlo convertiría el análisis en un peaje por la publicidad.
        Con envío, el correo es el servicio pedido y el botón sobra. */
@@ -188,17 +187,15 @@
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return fallo('cor.errFormato');
-    /* Con envío activo el correo es necesario para prestar el servicio que la
-       persona ha pedido, y por eso puede exigirse. La casilla de marketing
-       sigue siendo aparte y sigue siendo voluntaria: condicionar el análisis
-       a aceptar publicidad convertiría el consentimiento en un peaje. */
-    if (S.puedeEnviar && !$('cor-consent-salud').checked) {
-      err.textContent = T('cor.errSalud'); err.hidden = false; return;
-    }
+    /* El informe se envía a quien escribe su correo en este paso: el paso se
+       presenta como «el correo donde quieres recibir tu informe», así que
+       escribirlo es pedirlo (Lococo, 2026-09-26: sin casilla aparte). Se
+       explica en /privacidad. La casilla de novedades sigue siendo aparte y
+       voluntaria. */
     /* La casilla de marketing nunca bloquea: sin ella el correo simplemente
        no se guarda para novedades y el análisis sigue igual. */
     S.correo = email;
-    S.consintioSalud = S.puedeEnviar && $('cor-consent-salud').checked;
+    S.consintioSalud = S.puedeEnviar;   // pedido al escribir el correo
 
     var boton = $('btn-correo-ok');
     boton.disabled = true;
@@ -1536,7 +1533,6 @@
     $('log').innerHTML = '';
     $('correo').value = '';
     $('cor-consent').checked = false;
-    $('cor-consent-salud').checked = false;
     S.correo = null; S.consintioSalud = false;
     S.analisisGuardado = false;
     $('video').hidden = false;
