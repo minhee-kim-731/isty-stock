@@ -644,8 +644,72 @@
     return { activos: unicos, razones: razones, manana: manana, noche: noche, evitar: evitarU };
   }
 
+  /* Ingredientes de la tienda (lococo.beauty › Ingredientes, 2026-09-26).
+     El informe recomienda SÓLO estos seis, cada uno enlazado a su colección
+     de la tienda, en lugar de la lista clínica interna (ACTIVOS), que incluía
+     activos que Lococo no vende. La puntuación es determinista: el mismo
+     perfil da siempre los mismos ingredientes y en el mismo orden. */
+  var INGREDIENTES = [
+    { id: 'niacinamida', url: '/collections/niacinamida',
+      n: { es: 'Niacinamida', en: 'Niacinamide', ko: '나이아신아마이드' },
+      p: { es: 'Regula el sebo, afina el poro y aclara las marcas y el tono irregular.',
+           en: 'Regulates sebum, refines pores and fades marks and uneven tone.',
+           ko: '피지를 조절하고 모공을 정돈하며 자국과 고르지 않은 톤을 완화합니다.' } },
+    { id: 'centella', url: '/collections/centella-asiatica-cica',
+      n: { es: 'Centella Asiática (Cica)', en: 'Centella Asiatica (Cica)', ko: '병풀 (시카)' },
+      p: { es: 'Calma la rojez y la irritación y ayuda a reparar la barrera.',
+           en: 'Calms redness and irritation and helps repair the barrier.',
+           ko: '붉은기와 자극을 진정시키고 장벽 회복을 돕습니다.' } },
+    { id: 'hialuronico', url: '/collections/acido-hialuronico',
+      n: { es: 'Ácido Hialurónico', en: 'Hyaluronic Acid', ko: '히알루론산' },
+      p: { es: 'Retiene agua en la piel: alivia la tirantez y da elasticidad.',
+           en: 'Holds water in the skin: eases tightness and adds bounce.',
+           ko: '피부에 수분을 붙잡아 당김을 덜고 탄력을 줍니다.' } },
+    { id: 'retinoides', url: '/collections/retinoides-bakuchiol',
+      n: { es: 'Retinoides & Bakuchiol', en: 'Retinoids & Bakuchiol', ko: '레티노이드 & 바쿠치올' },
+      p: { es: 'Renuevan la piel y trabajan arrugas, firmeza y textura. En piel sensible, mejor bakuchiol o retinol suave, de noche.',
+           en: 'Renew the skin and work on wrinkles, firmness and texture. On sensitive skin, prefer bakuchiol or a gentle retinol, at night.',
+           ko: '피부를 재생시켜 주름·탄력·결을 개선합니다. 민감 피부는 바쿠치올이나 순한 레티놀을 밤에 쓰세요.' } },
+    { id: 'peptidos', url: '/collections/peptidos',
+      n: { es: 'Péptidos', en: 'Peptides', ko: '펩타이드' },
+      p: { es: 'Apoyan el colágeno y la firmeza sin irritar: antiedad suave.',
+           en: 'Support collagen and firmness without irritation: gentle anti-ageing.',
+           ko: '자극 없이 콜라겐과 탄력을 돕는 순한 안티에이징 성분입니다.' } },
+    { id: 'pdrn', url: '/collections/pdrn',
+      n: { es: 'PDRN', en: 'PDRN', ko: 'PDRN' },
+      p: { es: 'Favorece la regeneración: piel más reparada, jugosa y con mejor tono.',
+           en: 'Supports regeneration: skin that looks more repaired, plump and even.',
+           ko: '재생을 도와 더 회복되고 촉촉하며 톤이 고른 피부로 가꿉니다.' } }
+  ];
+
+  function ingredientesTienda(perfil, optico, max) {
+    var DO = perfil.ejes.DO, SR = perfil.ejes.SR, PN = perfil.ejes.PN, WT = perfil.ejes.WT;
+    var graso = DO.norm >= 0, sensible = SR.norm < 0, pigmentada = PN.norm < 0, arrugas = WT.norm < 0;
+    var deshidratada = perfil.hidratacion.norm < 0;
+    var g = optico ? optico.global : null;
+    var texturaAlta = g ? g.textura > 1.6 : false;
+    var eritemaAlto = g ? g.eritema > 17 : false;
+    var lesiones = g ? g.lesiones > 6 : false;
+    var tonoIrregular = g ? g.itaSd > 5 : false;
+    var punt = {
+      niacinamida: (graso ? 3 : 0) + (pigmentada ? 2 : 0) + (tonoIrregular ? 1 : 0) + (lesiones ? 1 : 0) + (texturaAlta ? 1 : 0),
+      centella:    (sensible ? 3 : 0) + (eritemaAlto ? 3 : 0) + (lesiones ? 1 : 0),
+      hialuronico: (!graso ? 3 : 0) + (deshidratada ? 3 : 0),
+      retinoides:  (arrugas ? 3 : 0) + (texturaAlta ? 1 : 0) + (arrugas && !sensible ? 1 : 0),
+      peptidos:    (arrugas ? 2 : 0) + (arrugas && sensible ? 2 : 0),
+      pdrn:        (eritemaAlto || sensible ? 1 : 0) + (arrugas ? 1 : 0) + (deshidratada ? 1 : 0) + (pigmentada ? 1 : 0)
+    };
+    var orden = INGREDIENTES.map(function (x, i) { return { x: x, s: punt[x.id], i: i }; })
+      .filter(function (o) { return o.s > 0; })
+      .sort(function (a, b) { return b.s - a.s || a.i - b.i; })
+      .map(function (o) { return o.x; });
+    // Siempre algo que recomendar: la hidratación vale para cualquier piel.
+    if (!orden.length) orden = [INGREDIENTES[2]];
+    return orden.slice(0, max || 3);
+  }
+
   global.ESPEJO_PERFIL = {
-    PREGUNTAS: PREGUNTAS, EJES: EJES,
-    calcular: calcular, recomendar: recomendar
+    PREGUNTAS: PREGUNTAS, EJES: EJES, INGREDIENTES: INGREDIENTES,
+    calcular: calcular, recomendar: recomendar, ingredientesTienda: ingredientesTienda
   };
 })(window);

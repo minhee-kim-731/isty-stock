@@ -356,7 +356,7 @@
       es: 'Contraste entre medición y respuestas',
       en: 'Measurement versus answers', ko: "측정값과 응답의 대조" },
 
-    'inf.s4':     { es: 'Activos indicados', en: 'Indicated actives', ko: "권장 활성성분" },
+    'inf.s4':     { es: 'Ingredientes recomendados', en: 'Recommended ingredients', ko: "추천 성분" },
     'inf.s4der':  { es: '', en: 'no brands', ko: "브랜드 없음" },
     'inf.porQue': { es: 'Por qué esta selección: ', en: 'Why this selection: ', ko: "이 선택의 근거: " },
     'inf.s4nota': {
@@ -371,6 +371,7 @@
       es: 'Cinco productos de Lococo elegidos según lo que hemos medido. Arriba, lo que más necesita tu piel; debajo, qué hace cada producto.',
       en: 'Five steps picked from the Lococo range based on what was measured. First the ' +
           'priorities with the figure behind each one; then what each step covers.', ko: "측정 결과를 바탕으로 Lococo 재고에서 고른 5단계입니다. 먼저 우선순위와 그 근거 수치, 그다음 각 단계가 무엇을 담당하는지." },
+    'inf.verIngrediente': { es: 'Ver productos con este ingrediente', en: 'See products with this ingredient', ko: "이 성분 제품 보기" },
     'inf.verProducto': { es: 'Ver producto', en: 'View product', ko: "제품 보러가기" },
     'inf.prodPrio': { es: 'Prioridades detectadas', en: 'Detected priorities', ko: "감지된 우선순위" },
     'inf.cubre':    { es: 'Cubre', en: 'Covers', ko: "담당" },

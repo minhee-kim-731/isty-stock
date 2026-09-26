@@ -688,6 +688,9 @@
      no llevan enlace. Las UTM permiten ver en Shopify qué ventas vinieron
      del puesto y cuáles del correo. */
   var TIENDA = 'https://lococo.beauty';
+  function urlTienda(ruta, medio) {
+    return TIENDA + ruta + '?utm_source=espejo&utm_medium=' + medio + '&utm_campaign=madrid2026';
+  }
   function urlProducto(pr, medio) {
     if (!pr || !pr.h) return null;
     return TIENDA + '/products/' + encodeURIComponent(pr.h) +
@@ -974,7 +977,9 @@
       H.push('<p class="tiny" style="margin-top:12px">' +
         TF('inf.centrofacial', { d: nf(g.deltaCentral, 1) }) + '</p>');
     }
-    H.push('</div></div>');
+    // Cierra la tabla con scroll, la rejilla y la sección 02. Faltaba el
+    // último: el resto del informe quedaba anidado dentro de esta sección.
+    H.push('</div></div></div>');
 
     /* --- 03 Análisis ampliado --------------------------------------- */
     if (MOSTRAR_LUPA) {
@@ -1025,18 +1030,18 @@
     }
 
     /* --- 04 Activos ------------------------------------------------- */
-    H.push(sec('05', T('inf.s4'), T('inf.s4der')));
-    if (rec.razones.length) {
-      H.push('<p class="small" style="margin-bottom:14px">' + T('inf.porQue') +
-        rec.razones.map(function (r) { return esc(TX(r)); }).join(' ') + '</p>');
-    }
+    /* Ingredientes de la tienda (ver perfil.js › INGREDIENTES), cada uno con
+       enlace a su colección en lococo.beauty. */
+    H.push(sec('05', T('inf.s4'), ''));
     H.push('<div class="act">');
-    rec.activos.forEach(function (a) {
-      H.push('<div class="act-fila"><span class="act-con">' + esc(TX(a.c)) + '</span>' +
+    P.ingredientesTienda(perfil, res, 3).forEach(function (a) {
+      H.push('<div class="act-fila act-fila--ing">' +
         '<div><div class="act-nom">' + esc(TX(a.n)) + '</div>' +
-        '<p class="act-por">' + esc(TX(a.p)) + '</p></div></div>');
+        '<p class="act-por">' + esc(TX(a.p)) + '</p>' +
+        '<a class="prod-link" href="' + esc(urlTienda(a.url, 'pantalla')) + '" target="_blank" rel="noopener">' +
+        T('inf.verIngrediente') + ' →</a></div></div>');
     });
-    H.push('</div><p class="tiny" style="margin-top:12px">' + T('inf.s4nota') + '</p></div>');
+    H.push('</div></div>');
 
     /* --- 05 Rutina Lococo (productos reales) ------------------------ */
     var rut = null;
@@ -1428,9 +1433,9 @@
     /* Activos, como etiquetas */
     H.push(tituloCorreo(T('inf.s4'), ''));
     H.push('<tr><td style="line-height:2.4">');
-    rec.activos.slice(0, 8).forEach(function (a) {
-      H.push('<span style="display:inline-block;margin:0 6px 8px 0;padding:6px 13px;border-radius:16px;background:' +
-        CO.palido + ';font-size:13px;font-weight:600;line-height:1.4;color:' + CO.azul + ls + '">' + esc(TX(a.n)) + '</span>');
+    P.ingredientesTienda(perfil, res, 3).forEach(function (a) {
+      H.push('<a href="' + esc(urlTienda(a.url, 'email')) + '" style="display:inline-block;margin:0 6px 8px 0;padding:6px 13px;border-radius:16px;background:' +
+        CO.palido + ';font-size:13px;font-weight:600;line-height:1.4;color:' + CO.azul + ';text-decoration:none' + ls + '">' + esc(TX(a.n)) + ' →</a>');
     });
     H.push('</td></tr>');
 

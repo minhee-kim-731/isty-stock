@@ -195,6 +195,14 @@ Lococo 요청으로 결과지와 메일에서 뺐다. `app.js` 의 `MOSTRAR_LUPA
 - **흔들림**: 8×8 블록 평균의 상위 5% 프레임 차이. 예전엔 픽셀 평균이라 센서 노이즈에 실패했다. 기준 3.2 그대로.
 - **카운트다운**: 2프레임(~250ms) 깜빡임은 봐준다. 실제로 찍히는 프레임은 5조건 모두 통과해야 한다.
 
+## 추천 성분 (결과지 "Ingredientes recomendados")
+
+쇼핑몰 메뉴 **Ingredientes** 의 6개(`perfil.js` 의 `INGREDIENTES`)에서만 고른다. 각 성분은 스토어 컬렉션으로 링크
+(`/collections/niacinamida`, `centella-asiatica-cica`, `acido-hialuronico`, `retinoides-bakuchiol`, `peptidos`, `pdrn`),
+UTM `utm_medium=pantalla|email`. 점수는 `ingredientesTienda()` — 유분·민감·건조·주름·톤·붉은기에 따라 정해지고
+상위 3개. 예전의 임상 성분 목록(`ACTIVOS`, BHA·아젤라산 등)은 결과지·메일에 더 이상 나오지 않는다.
+스토어에 성분 컬렉션이 추가되면 `INGREDIENTES` 에 한 항목 + `punt` 에 점수 규칙 하나를 넣는다.
+
 ## 제품 추천
 
 `catalogo.js`가 실리콘투 1차 발주 리스트에서 뽑은 97개 제품을 담고 있다. 진단 결과에서
