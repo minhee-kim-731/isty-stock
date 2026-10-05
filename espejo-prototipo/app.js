@@ -1506,7 +1506,7 @@
      delante ya tiene sus resultados en pantalla. */
   /* Registro del análisis (2026-09-26, a petición de Lococo): resultados,
      el correo del paso 2 (si lo dejó) y la foto de la zona útil (JPEG
-     512 px). El servidor borra las fotos a los 30 días. Se explica en
+     512 px), que se conserva hasta que se pida borrarla. Se explica en
      /privacidad, enlazada desde la portada; Lococo decidió no pedir casilla
      aparte.
      El informe de ejemplo («test») no se registra. Un fallo aquí no afecta

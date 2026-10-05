@@ -8,7 +8,7 @@
                           acepta novedades (consentimiento 1/0).
    POST /api/informe    → envía el informe por correo. NO LO GUARDA.
    POST /api/analisis   → registro del análisis: resultados anónimos siempre;
-                          correo + foto sólo con casilla explícita (30 días).
+                          correo y foto (sin caducidad; se borran a petición).
    GET  /r              → cuenta un clic del correo del informe y redirige a
                           lococo.beauty (sólo a ese dominio: no es un
                           redirector abierto).
@@ -30,7 +30,6 @@
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const MAX_ANALISIS = 700 * 1024;   // JSON + foto JPEG 512 px en base64 (~100 kB)
-const DIAS_FOTO = 30;
 
 /* La tabla se crea al primer uso: el token de despliegue no tiene permiso
    para ejecutar SQL en D1 desde fuera, pero el Worker sí. Idempotente. */
@@ -205,7 +204,7 @@ button.ver{ padding:3px 9px; font-size:12.5px; }
     <thead><tr><th>시각 (마드리드)</th><th>타입</th><th>유분</th><th>홍반</th><th>결</th><th>잡티</th><th>톤균일</th><th>추천 제품</th><th>이메일 · 사진</th><th></th></tr></thead>
     <tbody id="rtb"></tbody>
   </table></div>
-  <p class="mut" style="margin-top:12px">모든 분석 결과가 사진과 함께 저장되고, 이메일을 남겼으면 함께 보입니다. 사진은 30일 후 자동 삭제됩니다. 지수는 0–100.</p>
+  <p class="mut" style="margin-top:12px">모든 분석 결과가 사진과 함께 저장되고, 이메일을 남겼으면 함께 보입니다. 사진은 삭제 요청이 있을 때 이 페이지에서 지웁니다. 지수는 0–100.</p>
 </div>
 <div id="lista" hidden>
   <p class="mut">부스에서 이메일을 입력한 방문자 전체입니다. 소식 메일은 <b>마케팅 동의 = 예</b>인 사람에게만 보낼 수 있습니다.</p>
@@ -304,7 +303,7 @@ document.getElementById('rtb').addEventListener('click', function(ev){
   var f = ev.target.closest('button[data-foto]');
   if (f) {
     var id = f.getAttribute('data-foto');
-    pedir('/api/admin/foto?id=' + id).then(function(r){ if (!r.ok) throw new Error('사진이 없습니다 (30일이 지나 삭제되었을 수 있습니다).'); return r.blob(); })
+    pedir('/api/admin/foto?id=' + id).then(function(r){ if (!r.ok) throw new Error('사진이 없습니다.'); return r.blob(); })
       .then(function(bl){ document.getElementById('f' + id).innerHTML = '<img class="foto" alt="" src="' + URL.createObjectURL(bl) + '">'; f.remove(); })
       .catch(function(e){ alert(e.message); });
     return;
@@ -451,7 +450,7 @@ export default {
       const corto = (v, n) => (v == null ? null : String(v).slice(0, n));
       /* Correo del paso 2 si lo hay, y la foto de la zona útil. Lococo lo
          declara en /privacidad (sin casilla aparte, decisión suya); la foto
-         caduca a los DIAS_FOTO días (ver el UPDATE de abajo). */
+         se conserva hasta que se pida borrarla (Lococo, 2026-10-05). */
       let email = null, foto = null;
       const e = String(c.email || '').trim().toLowerCase();
       if (CORREO.test(e) && e.length <= 254) email = e;
@@ -472,11 +471,7 @@ export default {
           ).bind(new Date().toISOString(), corto(c.sesion, 32), corto(c.idioma, 5), corto(c.modo, 16),
                  corto(c.codigo, 8), corto(c.tono, 8), Number.isFinite(+c.ITA) ? +c.ITA : null,
                  corto(c.patron, 16), Number.isFinite(+c.confianza) ? Math.round(+c.confianza) : null,
-                 datos, email, foto, nombre),
-          // Caducidad de las fotos: se aplica en cada alta, sin cron.
-          env.espejo_leads.prepare(
-            `UPDATE analisis SET foto = NULL WHERE foto IS NOT NULL AND creado < ?`
-          ).bind(new Date(Date.now() - DIAS_FOTO * 864e5).toISOString())
+                 datos, email, foto, nombre)
         ]);
       } catch {
         return json({ error: 'db' }, 500);
