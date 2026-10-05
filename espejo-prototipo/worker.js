@@ -12,6 +12,8 @@
    GET  /r              → cuenta un clic del correo del informe y redirige a
                           lococo.beauty (sólo a ese dominio: no es un
                           redirector abierto).
+   GET  /export.csv?k=  → hoja completa para Google Sheets (IMPORTDATA). Firmada.
+   GET  /foto/<id>?k=   → foto de un análisis, para =IMAGE() en la hoja. Firmada.
    GET  /admin          → página de consulta del listado (código ADMIN_CODE).
    GET  /api/admin/leads, POST /api/admin/borrar → listado y bajas.
 
@@ -117,6 +119,45 @@ async function registrarFallo(env, ip) {
     env.espejo_leads.prepare('DELETE FROM admin_fallos WHERE t < ?').bind(Date.now() - VENTANA_MS)
   ]);
 }
+
+/* Firma de los enlaces de la hoja de cálculo: HMAC-SHA256 con ADMIN_CODE como
+   clave. Google Sheets no puede mandar cabeceras, así que la autorización va
+   en la URL; cambiar ADMIN_CODE invalida todos los enlaces de una vez. */
+async function firma(env, mensaje) {
+  const enc = new TextEncoder();
+  const clave = await crypto.subtle.importKey('raw', enc.encode(env.ADMIN_CODE), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', clave, enc.encode(mensaje)));
+  return Array.from(mac.slice(0, 16), b => b.toString(16).padStart(2, '0')).join('');
+}
+async function firmaValida(env, mensaje, k) {
+  if (!env.ADMIN_CODE || !k) return false;
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest('SHA-256', enc.encode(await firma(env, mensaje))),
+    crypto.subtle.digest('SHA-256', enc.encode(String(k)))
+  ]);
+  return crypto.subtle.timingSafeEqual(a, b);
+}
+
+/* Textos de la hoja (en coreano, para Lococo). Respuestas por índice de
+   opción en el orden de perfil.js › ACTIVAS; productos en el orden de las
+   ranuras de catalogo.js › RANURAS. Si cambian allí, cambiar aquí. */
+const HOJA_PREG = ['1. 세안 20분 후 피부', '2. 새 제품 반응', '3. 기미·잡티', '4. 주름', '5. 낮 동안 건조함'];
+const HOJA_OPS = [
+  ['당기고 거침', '약간 당기지만 편안함', '보통, 특별한 느낌 없음', '이마와 코에 유분기', '얼굴 전체에 유분기'],
+  ['거의 항상, 아주 천천히 써야 함', '가끔, 특정 제품에서', '드물게', '전혀, 거의 모든 제품을 견딤'],
+  ['넓고 뚜렷함', '일부 부위에 있음', '아주 적음', '없음'],
+  ['여러 개가 뚜렷함', '가는 주름이 조금', '웃거나 찡그릴 때만', '없음'],
+  ['거의 항상', '겨울이나 에어컨 바람에', '가끔', '전혀']
+];
+const HOJA_RANURAS = ['클렌징', '토너·에센스', '세럼', '수분크림', '자외선차단'];
+function csvCelda(v) {
+  const t = v == null ? '' : String(v);
+  return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+const fmtMadrid = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+});
 
 async function autorizado(request, env) {
   if (!env.ADMIN_CODE) return false;
@@ -420,6 +461,59 @@ export default {
       }
       /* Nada que guardar: el informe ya voló y de él no queda copia. */
       return json({ ok: true });
+    }
+
+    /* ------------------------------------------------- hoja de cálculo */
+    if (url.pathname === '/export.csv') {
+      if (!(await firmaValida(env, 'export-v1', url.searchParams.get('k')))) return new Response('Not found', { status: 404 });
+      await asegurarTabla(env.espejo_leads);
+      const db = env.espejo_leads;
+      const [leads, an] = await db.batch([
+        db.prepare('SELECT email, consentimiento, creado FROM leads'),
+        db.prepare('SELECT id, creado, codigo, datos, email, foto IS NOT NULL AS tiene_foto FROM analisis ORDER BY creado')
+      ]);
+      const mk = {};
+      for (const l of leads.results) mk[(l.email || '').toLowerCase()] = l;
+      const filas = [];
+      const conAnalisis = new Set();
+      for (const a of an.results) {
+        let d = {};
+        try { d = JSON.parse(a.datos); } catch (e) {}
+        const em = (a.email || '').toLowerCase();
+        if (em) conAnalisis.add(em);
+        const r = Array.isArray(d.respuestas) ? d.respuestas : [];
+        const pr = Array.isArray(d.productos) ? d.productos : [];
+        const foto = a.tiene_foto ? url.origin + '/foto/' + a.id + '?k=' + (await firma(env, 'foto-' + a.id)) : '';
+        filas.push([a.creado, fmtMadrid.format(new Date(a.creado)), a.email || '',
+          em && mk[em] ? (mk[em].consentimiento ? '예' : '아니오') : '',
+          a.codigo || '',
+          ...HOJA_OPS.map((ops, i) => (Number.isInteger(r[i]) && ops[r[i]]) || ''),
+          ...HOJA_RANURAS.map((_, i) => pr[i] || ''),
+          foto]);
+      }
+      // Correos sin análisis (dejaron el correo y no terminaron el test).
+      for (const l of leads.results) {
+        const em = (l.email || '').toLowerCase();
+        if (conAnalisis.has(em)) continue;
+        filas.push([l.creado, fmtMadrid.format(new Date(l.creado)), l.email, l.consentimiento ? '예' : '아니오', '',
+          ...HOJA_OPS.map(() => ''), ...HOJA_RANURAS.map(() => ''), '']);
+      }
+      filas.sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
+      const cab = ['일시 (마드리드)', '이메일', '마케팅 동의', '피부 타입', ...HOJA_PREG, ...HOJA_RANURAS, '사진 주소'];
+      const csv = [cab, ...filas.map(f => f.slice(1))].map(f => f.map(csvCelda).join(',')).join('\r\n');
+      return new Response(csv, { headers: { 'content-type': 'text/csv; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+    }
+    if (url.pathname.startsWith('/foto/')) {
+      const id = Number(url.pathname.slice(6));
+      if (!Number.isInteger(id) || id <= 0 || !(await firmaValida(env, 'foto-' + id, url.searchParams.get('k')))) {
+        return new Response('Not found', { status: 404 });
+      }
+      const fila = await env.espejo_leads.prepare('SELECT foto FROM analisis WHERE id = ?').bind(id).first();
+      if (!fila || !fila.foto) return new Response('Not found', { status: 404 });
+      const b = atob(fila.foto.split(',')[1]);
+      const bytes = new Uint8Array(b.length);
+      for (let i = 0; i < b.length; i++) bytes[i] = b.charCodeAt(i);
+      return new Response(bytes, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=3600', 'x-robots-tag': 'noindex' } });
     }
 
     /* ------------------------------------------------------------ clic */
