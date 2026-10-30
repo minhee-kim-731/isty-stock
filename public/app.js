@@ -223,6 +223,7 @@
       out += '<div class="memo-line shared"><span class="memo-tag">실장님</span>' + esc(p.memo)
         + memoDate(p.memoAt) + "</div>";
     }
+    out += checkMemoLines(p.checkMemos || []);
     if (ROLE === "brand" && p.memoBrand) {
       out += '<div class="memo-line own"><span class="memo-tag">나만</span>' + esc(p.memoBrand)
         + memoDate(p.memoBrandAt) + "</div>";
@@ -230,6 +231,24 @@
     return out
       + '<button class="memo-btn' + (mine ? "" : " empty") + '" data-act="memo" data-id="' + esc(p.id) + '">'
       + (mine ? "메모 고치기" : "메모 달기") + "</button>";
+  }
+
+  /**
+   * 입고 점검 때 남긴 메모. 최신 1개만 보이고, 같은 제품을 다시 점검한 이전 메모는 펼쳐 본다.
+   */
+  function checkMemoLines(list) {
+    if (!list.length) return "";
+    var line = function (c) {
+      return '<div class="memo-line check"><span class="memo-tag">'
+        + (c.checker === "Lococo" ? "민희 점검" : "실장님 점검") + "</span>"
+        + esc(c.memo) + memoDate(c.ts) + "</div>";
+    };
+    var out = line(list[0]);
+    if (list.length > 1) {
+      out += '<details class="memo-more"><summary>이전 점검 메모 ' + (list.length - 1) + "개</summary>"
+        + list.slice(1).map(line).join("") + "</details>";
+    }
+    return out;
   }
 
   /** 메모를 남긴 날짜. 날짜 칸이 생기기 전에 쓴 메모 중 기록을 못 찾은 것은 비워둔다. */

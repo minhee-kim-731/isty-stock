@@ -156,14 +156,21 @@ const SQL_CHECKS = `
          sc.batch, sc.checker, sc.memo, sc.actor, sc.created_at AS ts
     FROM stock_checks sc
     LEFT JOIN products p ON p.id = sc.product_id
-   ORDER BY sc.id DESC LIMIT 50`;
+   ORDER BY sc.id DESC LIMIT 2000`;
 
-/** 제품마다 딱 하나, 가장 최근 점검 기록만. 개수 점검 기록 표(최근 50건)와 달리 안 잘린다. */
+/** 제품마다 딱 하나, 가장 최근 점검 기록만. */
 const SQL_LAST_CHECK_PER_PRODUCT = `
   SELECT sc.product_id AS productId, sc.inbound_id AS inboundId, sc.checker, sc.created_at AS ts
     FROM stock_checks sc
    WHERE sc.product_id IS NOT NULL
      AND sc.id = (SELECT MAX(id) FROM stock_checks WHERE product_id = sc.product_id)`;
+
+/** 메모를 남긴 점검 기록 전부 (최신순). 재고 탭 메모 칸에 제품별로 붙인다. */
+const SQL_CHECK_MEMOS = `
+  SELECT sc.product_id AS productId, sc.inbound_id AS inboundId, sc.checker, sc.memo, sc.created_at AS ts
+    FROM stock_checks sc
+   WHERE sc.product_id IS NOT NULL AND sc.memo != ''
+   ORDER BY sc.id DESC`;
 
 /** 브랜드가 아직 못 본, 실장님이 일으킨 알림거리. */
 const SQL_ALERTS = `
@@ -185,7 +192,7 @@ const group = (rows, key) => {
 /** 화면 한 장을 그리는 데 필요한 전부를 한 번에 돌려준다. */
 export async function readState(db, role) {
   const seenId = Number((await getMeta(db, "brand_seen_activity_id")) || 0);
-  const [products, orders, orderItems, inbounds, inboundItems, activity, checks, lastChecks, packing, alerts, version] =
+  const [products, orders, orderItems, inbounds, inboundItems, activity, checks, lastChecks, checkMemos, packing, alerts, version] =
     await Promise.all([
       db.prepare(SQL_PRODUCTS).all(),
       db.prepare(SQL_ORDERS).all(),
@@ -195,6 +202,7 @@ export async function readState(db, role) {
       db.prepare(SQL_ACTIVITY).all(),
       db.prepare(SQL_CHECKS).all(),
       db.prepare(SQL_LAST_CHECK_PER_PRODUCT).all(),
+      db.prepare(SQL_CHECK_MEMOS).all(),
       db.prepare(SQL_PACKING).all(),
       db.prepare(SQL_ALERTS).bind(seenId).all(),
       getVersion(db),
@@ -213,6 +221,7 @@ export async function readState(db, role) {
     }
   }
   const lastCheckByProduct = new Map(lastChecks.results.map((c) => [c.productId, c]));
+  const checkMemosByProduct = group(checkMemos.results, "productId");
 
   return {
     version,
@@ -231,6 +240,11 @@ export async function readState(db, role) {
       out.checked = !!(latestInboundId != null && lastCheck && lastCheck.inboundId === latestInboundId);
       out.lastCheckBy = lastCheck ? lastCheck.checker : null;
       out.lastCheckAt = lastCheck ? lastCheck.ts : null;
+      // 점검 때 남긴 메모 (최신순). 제품 메모와는 별개로 stock_checks 에 쌓인다.
+      out.checkMemos = (checkMemosByProduct.get(p.id) || [])
+        .map(({ memo, checker, ts, inboundId }) => ({ memo, checker, ts, inboundId }));
+      out.lastCheckMemo = out.checkMemos.length ? out.checkMemos[0].memo : null;
+      out.lastCheckMemoAt = out.checkMemos.length ? out.checkMemos[0].ts : null;
       return out;
     }),
     orders: orders.results.map((o) => ({ ...o, items: itemsByOrder.get(o.id) || [] })),

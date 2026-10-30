@@ -290,6 +290,11 @@ dialog .pad{max-height:70vh;overflow:auto}
   font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;vertical-align:1px}
 .memo-line.shared .memo-tag{background:var(--surface3);color:var(--muted)}
 .memo-line.own .memo-tag{background:var(--accent-soft);color:var(--accent)}
+.memo-line.check{color:var(--ink2)}
+.memo-line.check .memo-tag{background:var(--warn-soft);color:var(--warn)}
+.memo-more{margin:-2px 0 5px}
+.memo-more summary{cursor:pointer;font-size:10.5px;color:var(--muted)}
+.memo-more .memo-line{margin:4px 0 0}
 .memo-other{padding:9px 11px;border-radius:7px;font-size:12.5px;line-height:1.5;
   background:var(--surface3);border:1px solid var(--line);color:var(--ink2)}
 
