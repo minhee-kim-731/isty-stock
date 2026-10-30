@@ -220,14 +220,21 @@
     var mine = ROLE === "brand" ? (p.memoBrand || "") : (p.memo || "");
     var out = "";
     if (p.memo) {
-      out += '<div class="memo-line shared"><span class="memo-tag">실장님</span>' + esc(p.memo) + "</div>";
+      out += '<div class="memo-line shared"><span class="memo-tag">실장님</span>' + esc(p.memo)
+        + memoDate(p.memoAt) + "</div>";
     }
     if (ROLE === "brand" && p.memoBrand) {
-      out += '<div class="memo-line own"><span class="memo-tag">나만</span>' + esc(p.memoBrand) + "</div>";
+      out += '<div class="memo-line own"><span class="memo-tag">나만</span>' + esc(p.memoBrand)
+        + memoDate(p.memoBrandAt) + "</div>";
     }
     return out
       + '<button class="memo-btn' + (mine ? "" : " empty") + '" data-act="memo" data-id="' + esc(p.id) + '">'
       + (mine ? "메모 고치기" : "메모 달기") + "</button>";
+  }
+
+  /** 메모를 남긴 날짜. 날짜 칸이 생기기 전에 쓴 메모 중 기록을 못 찾은 것은 비워둔다. */
+  function memoDate(iso) {
+    return iso ? '<span class="memo-date num">' + esc(fmtTime(iso)) + "</span>" : "";
   }
 
   /** 제품별 입고 점검 칩. 가장 최근 입고분을 점검했으면 완료로, 새 발주가 들어오면 다시 미점검으로 보인다. */
@@ -1267,7 +1274,7 @@
     // 브랜드에게는 실장님이 남긴 메모를 읽기 전용으로 함께 보여준다.
     var other = document.getElementById("memo-other");
     if (isBrand && p.memo) {
-      other.textContent = "실장님 메모: " + p.memo;
+      other.textContent = "실장님 메모" + (p.memoAt ? " (" + fmtTime(p.memoAt) + ")" : "") + ": " + p.memo;
       other.hidden = false;
     } else {
       other.hidden = true;

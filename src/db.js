@@ -92,6 +92,7 @@ export function movePackingStmts(db, { packingId, delta, reason, ref = "", actor
 const SQL_PRODUCTS = `
   SELECT p.id, p.brand, p.name, p.cost, p.sell_price AS sellPrice,
          p.stock, p.min_stock AS minStock, p.memo, p.memo_brand AS memoBrand,
+         p.memo_at AS memoAt, p.memo_brand_at AS memoBrandAt,
          COALESCE((
            SELECT SUM(oi.qty) FROM order_items oi
              JOIN orders o ON o.id = oi.order_id
@@ -220,6 +221,7 @@ export async function readState(db, role) {
       // 민희님 전용 메모·판매/씨딩 소진 구분은 창고 화면으로 아예 내려보내지 않는다.
       if (role !== "brand") {
         delete out.memoBrand;
+        delete out.memoBrandAt;
         delete out.soldConsumed;
         delete out.seedingConsumed;
       }

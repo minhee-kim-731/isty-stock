@@ -282,8 +282,8 @@ dialog .pad{max-height:70vh;overflow:auto}
   background:var(--warn-soft);border:1px solid var(--warn-line);color:var(--warn)}
 
 /* ---------- 메모 (공유 / 브랜드 전용) ---------- */
-.memo-line{font-size:12px;line-height:1.45;margin-bottom:3px;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.memo-line{font-size:12px;line-height:1.45;margin-bottom:5px;overflow-wrap:anywhere}
+.memo-date{display:block;margin-top:1px;font-size:10.5px;color:var(--muted)}
 .memo-line.shared{color:var(--ink2)}
 .memo-line.own{color:var(--accent)}
 .memo-tag{display:inline-block;margin-right:5px;padding:1px 5px;border-radius:4px;

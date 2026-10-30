@@ -751,7 +751,8 @@ async function setProductMemo({ db, m, body, role }) {
     : `${isBrand ? "내 메모" : "제품 메모"} 지움 · ${product.name}`;
 
   await db.batch([
-    db.prepare(`UPDATE products SET ${column} = ? WHERE id = ?`).bind(memo, product.id),
+    db.prepare(`UPDATE products SET ${column} = ?, ${column}_at = ? WHERE id = ?`)
+      .bind(memo, memo ? now() : null, product.id),
     activityStmt(db, role, label, isBrand ? "" : "stock_memo"),
     bumpVersionStmt(db),
   ]);

@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS products (
   archived   INTEGER NOT NULL DEFAULT 0,
   memo       TEXT NOT NULL DEFAULT '',  -- 실장님 메모 (양쪽 모두 보임)
   memo_brand TEXT NOT NULL DEFAULT '',  -- 민희님 전용 메모
+  memo_at       TEXT,                   -- 실장님 메모를 마지막으로 쓴 시각 (지우면 NULL)
+  memo_brand_at TEXT,                   -- 민희님 전용 메모를 마지막으로 쓴 시각 (지우면 NULL)
   created_at TEXT NOT NULL
 );
 
